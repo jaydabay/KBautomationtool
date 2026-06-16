@@ -1,0 +1,3037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KB Automation</title>
+<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f3f3f3;
+    --surface: #ffffff;
+    --surface2: #f8f9fa;
+    --surface3: #e8e8e8;
+    --border: #d1d1d1;
+    --border-bright: #c0c0c0;
+    --accent: #0078d4;
+    --accent-hover: #106ebe;
+    --accent-light: #deecf9;
+    --accent2: #2b88d8;
+    --text: #201f1e;
+    --text-muted: #605e5c;
+    --text-dim: #a19f9d;
+    --success: #107c10;
+    --success-bg: #dff6dd;
+    --warn: #d83b01;
+    --warn-bg: #fed9cc;
+    --toolbar-h: 50px;
+    --radius: 4px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.12);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.18);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 13px;
+  }
+
+  /* ── Header / Title Bar ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    height: 48px;
+    background: var(--accent);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .logo {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo-icon {
+    width: 22px; height: 22px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .header-spacer { flex: 1; }
+
+  .btn-header {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.9);
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: background .12s;
+    display: flex; align-items: center; gap: 6px;
+    height: 30px;
+  }
+  .btn-header:hover { background: rgba(255,255,255,0.22); }
+  .btn-header:active { background: rgba(255,255,255,0.1); }
+
+  .btn-header-primary {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    background: #ffffff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 5px 14px;
+    cursor: pointer;
+    transition: background .12s, box-shadow .12s;
+    display: flex; align-items: center; gap: 6px;
+    height: 30px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  .btn-header-primary:hover { background: #f0f0f0; }
+
+  /* ── Ribbon / Command Bar ── */
+  .ribbon {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 1px;
+    flex-shrink: 0;
+    height: var(--toolbar-h);
+    overflow-x: auto;
+    overflow-y: visible; /* must be visible so tooltips below aren't clipped */
+    position: relative;
+    z-index: 5;
+  }
+  .ribbon::-webkit-scrollbar { height: 3px; }
+  .ribbon::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .tb-sep {
+    width: 1px;
+    height: 24px;
+    background: var(--border);
+    margin: 0 5px;
+    flex-shrink: 0;
+  }
+
+  .tb-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background .1s, border-color .1s, color .1s;
+    flex-shrink: 0;
+  }
+  .tb-btn:hover { background: var(--accent-light); border-color: #c7e0f4; color: var(--accent); }
+  .tb-btn.active { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .tb-btn svg { pointer-events: none; }
+
+  .tb-select {
+    height: 28px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 0 6px;
+    outline: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color .1s;
+  }
+  .tb-select:hover { border-color: var(--accent); }
+  .tb-select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,120,212,0.15); }
+
+  .tb-number {
+    width: 44px;
+    height: 28px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 0 6px;
+    outline: none;
+    text-align: center;
+    flex-shrink: 0;
+    transition: border-color .1s;
+  }
+  .tb-number:hover { border-color: var(--accent); }
+  .tb-number:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,120,212,0.15); }
+
+  .tb-color-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .tb-color-wrap input[type=color] {
+    position: absolute; opacity: 0;
+    width: 100%; height: 100%;
+    cursor: pointer; top: 0; left: 0;
+    border: none;
+  }
+  .tb-color-preview {
+    width: 32px; height: 32px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    transition: background .1s, border-color .1s;
+  }
+  .tb-color-wrap:hover .tb-color-preview { background: var(--accent-light); border-color: #c7e0f4; color: var(--accent); }
+
+  /* ── Workspace ── */
+  .workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Left Panel ── */
+  .panel-left {
+    width: 360px;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    height: 36px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+  .panel-header-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .panel-header-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .code-area-wrap { flex: 1; overflow: hidden; position: relative; }
+
+  #codeInput {
+    width: 100%; height: 100%;
+    background: #fafafa;
+    color: #2d2d2d;
+    font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.75;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 14px;
+    tab-size: 2;
+    caret-color: var(--accent);
+  }
+  #codeInput::placeholder { color: var(--text-dim); }
+
+  .panel-actions {
+    padding: 8px 10px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    background: var(--surface2);
+  }
+
+  /* Buttons inside panel */
+  .btn-primary {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: 1px solid var(--accent-hover);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: background .1s;
+    display: flex; align-items: center; gap: 6px;
+    height: 30px;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+
+  .btn-outline {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background .1s, border-color .1s;
+    display: flex; align-items: center; gap: 5px;
+    height: 30px;
+  }
+  .btn-outline:hover { background: var(--surface3); border-color: var(--border-bright); color: var(--text); }
+
+  /* ── Copy Button (special) ── */
+  .btn-copy {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--success);
+    background: var(--success-bg);
+    border: 1px solid #a7d7a8;
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: background .1s, border-color .1s;
+    display: flex; align-items: center; gap: 6px;
+    height: 30px;
+    flex-shrink: 0;
+  }
+  .btn-copy:hover { background: #c8e6c9; border-color: #6abf69; }
+  .btn-copy.copied {
+    color: #fff;
+    background: var(--success);
+    border-color: var(--success);
+    animation: copyFlash .3s ease;
+  }
+  @keyframes copyFlash {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── Resize Handle ── */
+  .resize-handle {
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    flex-shrink: 0;
+    position: relative;
+    transition: background .15s;
+  }
+  .resize-handle:hover { background: var(--accent); }
+
+  /* ── Right Panel ── */
+  .panel-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* Canvas wrap */
+  .canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .canvas-inner {
+    flex: 1;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+  }
+
+  #previewFrame {
+    width: 100%; height: 100%;
+    border: none;
+    background: #fff;
+  }
+
+  /* Empty State */
+  .empty-state {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .empty-icon {
+    width: 56px; height: 56px;
+    background: var(--accent-light);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+    color: var(--accent);
+  }
+  .empty-state h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .empty-state p {
+    font-size: 12px;
+    color: var(--text-dim);
+    max-width: 220px;
+    line-height: 1.6;
+  }
+  .shortcut-hint {
+    display: inline-block;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 11px;
+    padding: 1px 5px;
+    color: var(--text-muted);
+    font-family: monospace;
+  }
+
+  /* ── Status Bar ── */
+  .statusbar {
+    height: 24px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 14px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.85);
+    flex-shrink: 0;
+  }
+  .status-item { display: flex; align-items: center; gap: 5px; }
+  .status-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    transition: background .3s;
+  }
+  .status-dot.live { background: #6cf07a; box-shadow: 0 0 5px #6cf07a; }
+  #statusText { transition: color .3s; }
+
+  /* ── Link Popup ── */
+  .link-popup {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 10000;
+    min-width: 300px;
+    box-shadow: var(--shadow-lg);
+  }
+  .link-popup.open { display: flex; }
+  .link-popup-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 2px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .link-popup label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+  .link-popup input, .link-popup select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 6px 8px;
+    outline: none;
+    transition: border .12s;
+    width: 100%;
+    height: 30px;
+  }
+  .link-popup input:focus, .link-popup select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,120,212,0.15); }
+  .link-popup-actions { display: flex; gap: 6px; margin-top: 6px; }
+
+  /* Tooltip — shows BELOW to avoid ribbon overflow-y:hidden clipping */
+  [data-tip] { position: relative; }
+  [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    top: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #323130;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 400;
+    white-space: nowrap;
+    padding: 4px 8px;
+    border-radius: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s .3s;
+    z-index: 9999;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    letter-spacing: 0.1px;
+  }
+  /* Triangle pointing UP */
+  [data-tip]::before {
+    content: '';
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-bottom-color: #323130;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s .3s;
+    z-index: 9999;
+  }
+  [data-tip]:hover::after,
+  [data-tip]:hover::before { opacity: 1; }
+
+  /* Mode badge */
+  .mode-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    padding: 2px 0;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-bright); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+
+  /* ══════════════════════
+     TEXT → HTML TOGGLE MODE
+  ══════════════════════ */
+  .input-mode-toggle {
+    display: flex;
+    align-items: center;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .imt-btn {
+    height: 22px;
+    padding: 0 8px;
+    font-size: 10.5px;
+    font-weight: 500;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text-muted);
+    background: transparent;
+    white-space: nowrap;
+    transition: all .12s;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .imt-btn.active {
+    background: var(--surface);
+    color: var(--accent);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.10);
+  }
+
+  /* Text paste area */
+  #textInput {
+    width: 100%; height: 100%;
+    background: #fff;
+    color: #201f1e;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 12.5px;
+    line-height: 1.7;
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 14px;
+    caret-color: var(--accent);
+  }
+  #textInput::placeholder { color: var(--text-dim); font-style: italic; }
+
+  /* Convert button */
+  .btn-convert {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: #5c2d91;
+    border: 1px solid #4a2277;
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: background .1s;
+    display: flex; align-items: center; gap: 6px;
+    height: 30px;
+    flex: 1;
+    justify-content: center;
+  }
+  .btn-convert:hover { background: #4a2277; }
+  .btn-convert:disabled { opacity:.5; pointer-events:none; }
+
+  /* Conversion result badge */
+  .convert-badge {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .convert-badge.ok  { background:#dff6dd; color:#107c10; border:1px solid #a7d7a8; }
+  .convert-badge.err { background:#fde7e9; color:#c50f1f; border:1px solid #f4b8b0; }
+
+  /* ── Preview / Edit Mode Toggle ── */
+  .mode-toggle-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .mode-toggle-btn {
+    height: 24px;
+    padding: 0 10px;
+    font-size: 11px;
+    font-weight: 500;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .12s, color .12s, box-shadow .12s;
+    display: flex; align-items: center; gap: 5px;
+    color: var(--text-muted);
+    background: transparent;
+    white-space: nowrap;
+  }
+  .mode-toggle-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    font-weight: 600;
+  }
+  .mode-toggle-btn.active.preview-btn { color: var(--success); }
+  .mode-toggle-btn.active.edit-btn { color: var(--accent); }
+
+  /* Toolbar disabled state in preview mode */
+  .ribbon.preview-mode .tb-btn,
+  .ribbon.preview-mode .tb-select,
+  .ribbon.preview-mode .tb-number,
+  .ribbon.preview-mode .tb-color-wrap {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  /* Find & Replace stays active in preview mode */
+  .ribbon.preview-mode #btnFnR {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Canvas preview mode border */
+  .canvas-inner.preview-mode {
+    border-color: var(--success);
+    box-shadow: 0 0 0 2px rgba(16,124,16,0.12);
+  }
+  .canvas-inner.edit-mode {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,120,212,0.12);
+  }
+  .fnr-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height .22s cubic-bezier(.4,0,.2,1), border-color .22s;
+    flex-shrink: 0;
+  }
+  .fnr-bar.open { max-height: 110px; border-bottom-color: var(--accent); }
+
+  .fnr-inner {
+    padding: 10px 14px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .fnr-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .fnr-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    width: 52px;
+    flex-shrink: 0;
+    letter-spacing: 0.2px;
+  }
+
+  .fnr-input {
+    flex: 1;
+    height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12.5px;
+    padding: 0 8px;
+    outline: none;
+    transition: border-color .12s, box-shadow .12s;
+    min-width: 0;
+  }
+  .fnr-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,120,212,0.15); }
+  .fnr-input.has-error { border-color: var(--warn); box-shadow: 0 0 0 2px rgba(216,59,1,0.12); }
+
+  .fnr-match-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    min-width: 70px;
+    text-align: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .fnr-match-count.found { color: var(--accent); border-color: #c7e0f4; background: var(--accent-light); font-weight: 600; }
+  .fnr-match-count.none { color: var(--warn); border-color: #f9c0a9; background: var(--warn-bg); }
+
+  .fnr-toggle {
+    height: 28px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all .1s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .fnr-toggle:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .fnr-toggle.on { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  .fnr-btn {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    font-weight: 500;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all .1s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: inherit;
+  }
+  .fnr-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .fnr-btn:disabled { opacity: .4; pointer-events: none; }
+
+  .fnr-btn-primary {
+    background: var(--accent);
+    border-color: var(--accent-hover);
+    color: #fff;
+    font-weight: 600;
+  }
+  .fnr-btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
+
+  .fnr-btn-icon {
+    width: 28px; height: 28px; padding: 0;
+    justify-content: center;
+  }
+
+  .fnr-nav-group {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .fnr-close {
+    width: 28px; height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius);
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background .1s, color .1s;
+    margin-left: 4px;
+    font-family: inherit;
+  }
+  .fnr-close:hover { background: var(--surface3); color: var(--text); }
+
+  /* Panel right subheader */
+  .canvas-topbar {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    height: 36px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .canvas-topbar-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .canvas-topbar-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+  }
+  .canvas-topbar-dot.inactive { background: var(--text-dim); }
+
+  /* ══════════════════════════════════════
+     STANDARDS CHECKER PANEL
+  ══════════════════════════════════════ */
+  .standards-panel {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 320px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 20;
+    transform: translateX(100%);
+    transition: transform .22s cubic-bezier(.4,0,.2,1);
+    box-shadow: -4px 0 16px rgba(0,0,0,0.10);
+  }
+  .standards-panel.open { transform: translateX(0); }
+
+  .standards-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    height: 40px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .standards-panel-close {
+    margin-left: auto;
+    width: 26px; height: 26px;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .1s;
+    font-family: inherit;
+  }
+  .standards-panel-close:hover { background: var(--surface3); color: var(--text); }
+
+  .standards-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .std-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 6px 0 2px;
+  }
+
+  .std-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    font-size: 11.5px;
+    line-height: 1.4;
+    cursor: default;
+  }
+  .std-item.pass  { background: #f0faf0; border-color: #b3d9b3; color: #0a5a0a; }
+  .std-item.fail  { background: #fef0ee; border-color: #f4b8b0; color: #8b1a0a; cursor: pointer; }
+  .std-item.warn  { background: #fffbe6; border-color: #f0d060; color: #6b4800; }
+  .std-item.info  { background: #f0f4ff; border-color: #b8c8f4; color: #1a3060; }
+  .std-item:hover.fail { background: #fce0db; }
+
+  .std-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .std-text { flex: 1; }
+  .std-text strong { display: block; font-weight: 600; margin-bottom: 1px; }
+  .std-text span { font-size: 10.5px; opacity: .85; }
+
+  .std-score-bar {
+    margin: 6px 0 10px;
+    background: var(--surface3);
+    border-radius: 8px;
+    height: 6px;
+    overflow: hidden;
+  }
+  .std-score-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width .5s ease;
+  }
+
+  .std-summary {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+  .std-summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .btn-apply-standards {
+    width: 100%;
+    height: 30px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background .12s;
+  }
+  .btn-apply-standards:hover { background: var(--accent-hover); }
+
+  /* Standards check button in topbar */
+  .btn-standards {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+  }
+  .btn-standards:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .btn-standards.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    </div>
+    KB Automation
+  </div>
+  <div class="header-spacer"></div>
+  <button class="btn-header" onclick="clearAll()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+    Reset
+  </button>
+  <button class="btn-header-primary" id="btnHeaderCopy" onclick="headerCopyHTML()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <span id="btnHeaderCopyLabel">Copy HTML Code</span>
+  </button>
+</header>
+
+<!-- ══ RIBBON TOOLBAR ══ -->
+<div class="ribbon" id="mainToolbar">
+
+  <!-- Undo / Redo -->
+  <button class="tb-btn" data-tip="Undo (Ctrl+Z)" onclick="editorCmd('undo')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+  </button>
+  <button class="tb-btn" data-tip="Redo (Ctrl+Y)" onclick="editorCmd('redo')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Font family -->
+  <select class="tb-select" id="fontFamily" style="width:116px" onchange="applyFont()" data-tip="Font Family">
+    <option>Segoe UI</option>
+    <option>Arial</option>
+    <option>Georgia</option>
+    <option>Times New Roman</option>
+    <option>Courier New</option>
+    <option>Verdana</option>
+    <option>Trebuchet MS</option>
+    <option>Impact</option>
+    <option>Calibri</option>
+  </select>
+
+  <!-- Font size -->
+  <input type="number" class="tb-number" id="fontSize" value="14" min="6" max="120" onchange="applyFontSize()" data-tip="Font Size"/>
+
+  <div class="tb-sep"></div>
+
+  <!-- Bold, Italic, Underline, Strike -->
+  <button class="tb-btn" id="btnBold" data-tip="Bold (Ctrl+B)" onclick="toggleCmd('bold','btnBold')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+  </button>
+  <button class="tb-btn" id="btnItalic" data-tip="Italic (Ctrl+I)" onclick="toggleCmd('italic','btnItalic')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+  </button>
+  <button class="tb-btn" id="btnUnderline" data-tip="Underline (Ctrl+U)" onclick="toggleCmd('underline','btnUnderline')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v7a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+  </button>
+  <button class="tb-btn" id="btnStrike" data-tip="Strikethrough" onclick="toggleCmd('strikethrough','btnStrike')">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 20H9a3 3 0 0 1 0-6"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Text color -->
+  <div class="tb-color-wrap" data-tip="Text Color">
+    <div class="tb-color-preview" id="txtColorPreview">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </div>
+    <input type="color" id="txtColor" value="#000000" onchange="applyTextColor()"/>
+  </div>
+
+  <!-- Highlight -->
+  <div class="tb-color-wrap" data-tip="Highlight Color">
+    <div class="tb-color-preview" id="hlColorPreview">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    </div>
+    <input type="color" id="hlColor" value="#ffff00" onchange="applyHighlight()"/>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <!-- Alignment -->
+  <button class="tb-btn" data-tip="Align Left" onclick="editorCmd('justifyLeft')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+  </button>
+  <button class="tb-btn" data-tip="Center" onclick="editorCmd('justifyCenter')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <button class="tb-btn" data-tip="Align Right" onclick="editorCmd('justifyRight')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <button class="tb-btn" data-tip="Justify" onclick="editorCmd('justifyFull')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Lists -->
+  <button class="tb-btn" data-tip="Bullet List" onclick="editorCmd('insertUnorderedList')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+  </button>
+  <button class="tb-btn" data-tip="Numbered List" onclick="editorCmd('insertOrderedList')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke="currentColor" stroke-width="1.5"/><path d="M4 10h2" stroke="currentColor" stroke-width="1.5"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" stroke="currentColor" stroke-width="1.5"/></svg>
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Heading / Format block -->
+  <select class="tb-select" id="headingLevel" style="width:100px" onchange="applyHeading()" data-tip="Paragraph Style">
+    <option value="p">Paragraph</option>
+    <option value="h1">Heading 1</option>
+    <option value="h2">Heading 2</option>
+    <option value="h3">Heading 3</option>
+    <option value="h4">Heading 4</option>
+    <option value="blockquote">Blockquote</option>
+    <option value="pre">Preformat</option>
+  </select>
+
+  <div class="tb-sep"></div>
+
+  <!-- Link -->
+  <button class="tb-btn" data-tip="Insert / Edit Link" onclick="openLinkEditor()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+  </button>
+
+  <!-- Image -->
+  <button class="tb-btn" data-tip="Edit Image Source" onclick="openImageEditor()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+  </button>
+
+  <!-- Inline code -->
+  <button class="tb-btn" data-tip="Inline Code" onclick="wrapSelection('code')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- Indent / Outdent -->
+  <button class="tb-btn" data-tip="Indent" onclick="editorCmd('indent')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="8" x2="21" y2="8"/><line x1="3" y1="16" x2="21" y2="16"/><line x1="7" y1="12" x2="21" y2="12"/><polyline points="3 4 7 8 3 12"/></svg>
+  </button>
+  <button class="tb-btn" data-tip="Outdent" onclick="editorCmd('outdent')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="8" x2="21" y2="8"/><line x1="3" y1="16" x2="21" y2="16"/><line x1="3" y1="12" x2="17" y2="12"/><polyline points="21 8 17 12 21 16"/></svg>
+  </button>
+
+  <!-- Clear formatting -->
+  <button class="tb-btn" data-tip="Clear Formatting" onclick="editorCmd('removeFormat')">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><line x1="5" y1="5" x2="19" y2="19"/></svg>
+  </button>
+
+  <div style="flex:1"></div>
+
+  <!-- ── Find & Replace button ── -->
+  <button id="btnFnR" onclick="toggleFnR()" data-tip="Ctrl+H"
+    style="display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;
+           background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);
+           font-family:inherit;font-size:12px;font-weight:500;color:var(--text);
+           cursor:pointer;flex-shrink:0;white-space:nowrap;transition:all .12s;">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Find &amp; Replace
+  </button>
+
+  <div class="tb-sep"></div>
+
+  <!-- ── Edit Mode Active badge ── -->
+  <div id="modeBadge" style="display:none;align-items:center;gap:6px;height:30px;padding:0 12px;
+       background:#deecf9;border:1px solid #0078d4;border-radius:var(--radius);
+       font-size:12px;font-weight:600;color:#0078d4;white-space:nowrap;flex-shrink:0;">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Edit Mode Active
+  </div>
+</div>
+
+<!-- ══ WORKSPACE ══ -->
+<div class="workspace">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left" id="panelLeft">
+    <div class="panel-header">
+      <div class="panel-header-title">
+        <span class="panel-header-dot"></span>
+        <span id="panelModeLabel">HTML Source</span>
+      </div>
+      <!-- ★ INPUT MODE TOGGLE ★ -->
+      <div class="input-mode-toggle" data-tip="Switch input mode">
+        <button class="imt-btn active" id="btnModeHTML" onclick="switchInputMode('html')">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          HTML
+        </button>
+        <button class="imt-btn" id="btnModeText" onclick="switchInputMode('text')">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+          Text
+        </button>
+      </div>
+      <button class="btn-outline" id="btnFormatCode" onclick="formatCode()" data-tip="Beautify HTML" style="height:24px;font-size:11px;padding:0 8px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+        Format
+      </button>
+    </div>
+
+    <!-- HTML mode area -->
+    <div class="code-area-wrap" id="htmlModeArea">
+      <textarea id="codeInput" spellcheck="false" placeholder="<!-- Paste your HTML here -->&#10;&#10;<h1>Hello World</h1>&#10;<p>Your content here...</p>&#10;&#10;<!-- Then click Render &amp; Edit -->"></textarea>
+    </div>
+
+    <!-- Text mode area (hidden by default) -->
+    <div class="code-area-wrap" id="textModeArea" style="display:none">
+      <textarea id="textInput" spellcheck="false" placeholder="Paste or type your article content here...&#10;&#10;The converter will automatically:&#10;• Detect headings (short lines, ALL CAPS, or lines ending with :)&#10;• Format bullet points and numbered lists&#10;• Apply KB standard fonts and colors&#10;• Style Notes and Warnings in the correct color&#10;&#10;Example:&#10;How to create a view in DynaMight&#10;&#10;1. Open the DynaMight portal&#10;2. Click Views&#10;• Select New View&#10;&#10;Note: Save your work before closing."></textarea>
+    </div>
+
+    <div class="panel-actions">
+      <!-- HTML mode actions -->
+      <div id="htmlModeActions" style="display:flex;gap:6px;width:100%">
+        <button class="btn-primary" onclick="renderHTML()" style="flex:1;justify-content:center;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Render &amp; Edit
+        </button>
+      </div>
+      <!-- Text mode actions -->
+      <div id="textModeActions" style="display:none;gap:6px;width:100%;flex-direction:column">
+        <div style="display:flex;gap:6px">
+          <button class="btn-convert" onclick="convertTextToHTML()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            Convert to HTML
+          </button>
+          <button class="btn-outline" onclick="clearTextInput()" style="height:30px;padding:0 10px;font-size:11px">Clear</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)">
+          <span id="convertBadge"></span>
+          <span id="convertMsg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZE HANDLE -->
+  <div class="resize-handle" id="resizeHandle"></div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+
+    <!-- Canvas top bar -->
+    <div class="canvas-topbar">
+      <div class="canvas-topbar-title">
+        <span class="canvas-topbar-dot inactive" id="canvasDot"></span>
+        <span id="canvasTopLabel">Live Canvas</span>
+      </div>
+
+      <!-- ★ PREVIEW / EDIT MODE TOGGLE ★ -->
+      <div class="mode-toggle-wrap" id="modeToggleWrap" style="margin-left:10px;opacity:0.4;pointer-events:none" data-tip="Render HTML first to switch modes">
+        <button class="mode-toggle-btn preview-btn active" id="btnPreviewMode" onclick="setMode('preview')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <button class="mode-toggle-btn edit-btn" id="btnEditMode" onclick="setMode('edit')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+      </div>
+
+      <div style="flex:1"></div>
+
+      <!-- ★ COPY HTML BUTTON ★ -->
+      <button class="btn-copy" id="copyBtn" onclick="copyHTML()" data-tip="Copy generated HTML to clipboard">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="copyBtnText">Copy HTML</span>
+      </button>
+
+      <button class="btn-outline" onclick="exportHTML()" style="height:26px;font-size:11px;padding:0 10px;margin-left:4px;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export .html
+      </button>
+      <button class="btn-outline" onclick="prepareForDynamics()" style="height:26px;font-size:11px;padding:0 10px;margin-left:4px;" data-tip="Normalize output for Dynamics / KB article paste">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/></svg>
+        Prepare for Dynamics
+      </button>
+      <button class="btn-standards" id="btnStandards" onclick="toggleStandards()" style="margin-left:4px;" data-tip="Check article against KB standards">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Standards Check
+      </button>
+    </div>
+
+    <!-- ══ FIND & REPLACE PANEL ══ -->
+    <div class="fnr-bar" id="fnrBar">
+      <div class="fnr-inner">
+
+        <!-- Row 1: Find -->
+        <div class="fnr-row">
+          <span class="fnr-label">Find</span>
+          <input class="fnr-input" type="text" id="fnrFind" placeholder="Search text…" oninput="fnrSearch()" onkeydown="fnrKeyNav(event)"/>
+          <span class="fnr-match-count" id="fnrCount">—</span>
+
+          <!-- Nav: Prev / Next -->
+          <div class="fnr-nav-group">
+            <button class="fnr-btn fnr-btn-icon" data-tip="Previous match (Shift+Enter)" onclick="fnrNav(-1)" id="fnrPrev">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button class="fnr-btn fnr-btn-icon" data-tip="Next match (Enter)" onclick="fnrNav(1)" id="fnrNext">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+
+          <!-- Options -->
+          <button class="fnr-toggle" id="toggleCase" onclick="fnrToggleOption('case')" data-tip="Match case">
+            Aa
+          </button>
+          <button class="fnr-toggle" id="toggleWord" onclick="fnrToggleOption('word')" data-tip="Whole word">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="7" width="4" height="10" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/><line x1="1" y1="20" x2="23" y2="20"/></svg>
+            W
+          </button>
+          <button class="fnr-toggle" id="toggleRegex" onclick="fnrToggleOption('regex')" data-tip="Use regular expression">
+            .*
+          </button>
+
+          <!-- Scope selector -->
+          <select class="tb-select" id="fnrScope" style="height:28px;width:110px" onchange="fnrSearch()">
+            <option value="canvas">Canvas (visual)</option>
+            <option value="source">Source code</option>
+            <option value="both">Both</option>
+          </select>
+
+          <button class="fnr-close" onclick="closeFnR()" data-tip="Close (Esc)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        <!-- Row 2: Replace -->
+        <div class="fnr-row">
+          <span class="fnr-label">Replace</span>
+          <input class="fnr-input" type="text" id="fnrReplace" placeholder="Replacement text…" onkeydown="fnrReplaceKey(event)"/>
+          <div style="display:flex;gap:5px;flex-shrink:0">
+            <button class="fnr-btn" onclick="fnrReplaceCurrent()" id="fnrRepOne">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Replace
+            </button>
+            <button class="fnr-btn fnr-btn-primary" onclick="fnrReplaceAll()" id="fnrRepAll">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+              Replace All
+            </button>
+          </div>
+
+          <!-- Result message -->
+          <span id="fnrMsg" style="font-size:11px;color:var(--success);white-space:nowrap;min-width:120px"></span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas-inner" id="canvasInner">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6"/><path d="M9 12h6"/><path d="M9 15h4"/></svg>
+          </div>
+          <h3>Canvas is empty</h3>
+          <p>Paste HTML in the source panel, then click <strong>Render &amp; Edit</strong> to begin customizing.</p>
+          <p style="margin-top:10px"><span class="shortcut-hint">Ctrl+Enter</span> to render quickly</p>
+        </div>
+        <!-- Loading overlay -->
+        <div id="renderOverlay" style="display:none;position:absolute;inset:0;background:rgba(255,255,255,0.85);z-index:10;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;">
+          <div id="renderSpinner" style="width:28px;height:28px;border:3px solid #d1d1d1;border-top-color:#0078d4;border-radius:50%;animation:spin .7s linear infinite;"></div>
+          <span style="font-size:12px;color:#605e5c;font-family:Segoe UI,sans-serif">Rendering HTML…</span>
+        </div>
+        <iframe id="previewFrame" style="display:none"></iframe>
+      </div>
+    </div>
+
+    <!-- ══ STANDARDS CHECKER PANEL ══ -->
+    <div class="standards-panel" id="standardsPanel">
+      <div class="standards-panel-header">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        KB Standards Check
+        <button class="standards-panel-close" onclick="toggleStandards()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="standards-panel-body" id="standardsBody">
+        <div style="text-align:center;color:var(--text-dim);font-size:12px;padding:30px 10px">
+          Render HTML first, then run Standards Check to validate your article.
+        </div>
+      </div>
+      <div class="std-summary" id="standardsSummary" style="display:none">
+        <div class="std-summary-row">
+          <span id="stdScoreLabel">Score</span>
+          <span id="stdScoreValue" style="font-weight:600"></span>
+        </div>
+        <div class="std-score-bar"><div class="std-score-fill" id="stdScoreFill"></div></div>
+        <button class="btn-apply-standards" onclick="applyStandards()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/></svg>
+          Auto-Fix Standards
+        </button>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="statusbar">
+      <div class="status-item">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Ready</span>
+      </div>
+      <div style="flex:1"></div>
+      <span id="charCount">0 chars</span>
+      <span style="opacity:.5">·</span>
+      <span id="elemCount">0 elements</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LINK POPUP ══ -->
+<div class="link-popup" id="linkPopup">
+  <div class="link-popup-title">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+    Insert / Edit Link
+  </div>
+  <label>URL</label>
+  <input type="url" id="linkUrl" placeholder="https://example.com"/>
+  <label>Display Text <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+  <input type="text" id="linkText" placeholder="Leave empty to keep selected text"/>
+  <label>Open in</label>
+  <select id="linkTarget">
+    <option value="_self">Same tab</option>
+    <option value="_blank">New tab</option>
+  </select>
+  <div class="link-popup-actions">
+    <button class="btn-primary" style="flex:1;justify-content:center;" onclick="applyLink()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Apply
+    </button>
+    <button class="btn-outline" onclick="closeLinkPopup()">Cancel</button>
+  </div>
+</div>
+
+<script>
+/* ─── STATE ─── */
+let iframeDoc = null;
+let savedRange = null;
+let currentMode = 'preview'; // 'preview' | 'edit'
+
+/* ─── RESIZE PANEL ─── */
+const resizeHandle = document.getElementById('resizeHandle');
+const panelLeft = document.getElementById('panelLeft');
+let isResizing = false;
+resizeHandle.addEventListener('mousedown', () => {
+  isResizing = true;
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+});
+document.addEventListener('mousemove', e => {
+  if (!isResizing) return;
+  panelLeft.style.width = Math.max(200, Math.min(560, e.clientX)) + 'px';
+});
+document.addEventListener('mouseup', () => {
+  isResizing = false;
+  document.body.style.cursor = '';
+  document.body.style.userSelect = '';
+});
+
+/* ─── RENDER ENGINE ─── */
+
+function isHtmlFragment(code) {
+  const s = code.trim().toLowerCase();
+  return !s.startsWith('<!doctype') && !s.startsWith('<html');
+}
+
+function wrapFragment(fragment) {
+  var css = [
+    'body { font-family: "Segoe UI","Helvetica Neue",sans-serif; font-size: 12pt; margin: 16px 20px; color: #201f1e; line-height: 1.5; }',
+    'a[href] { color: #0078d4; }',
+    'a:not([href]) { color: inherit; cursor: text; }',
+    'table { border-collapse: collapse; max-width: 100%; }',
+    'td, th { padding: 4px 8px; border: 1px solid #bfbfbf; vertical-align: top; word-wrap: break-word; }',
+    'img { max-width: 100%; height: auto; display: inline-block; }',
+    'ul, ol { margin: 0.4em 0; padding-left: 2em; }',
+    'select, input { font-family: inherit; font-size: 11pt; padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px; }',
+    'section.collapsible_panel, section.collapsible_panel.collapsible_panel_noborder { display: block; margin: 0 0 6px 0; border: 1px solid #d6d6d6 !important; border-radius: 4px; background: #fff; overflow: hidden; }',
+    'div.collapsible_panel_head { cursor: pointer; user-select: none; display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; min-height: 20px; position: relative; }',
+    'div.collapsible_panel_head:hover { background: #f5f5f5; }',
+    '.collapsible_panel_title { flex: 1; min-width: 0; }',
+    '.collapsible_panel_title p { margin: 0; }',
+    '.collapsible_panel_body { display: none; padding: 6px 16px 16px 40px; border-top: 1px solid #ececec; }',
+    '.collapsible_panel_body p:first-child { margin-top: 0; }',
+    '.collapsible_panel_body p:last-child { margin-bottom: 0; }',
+    '.collapsible_panel_icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; margin-top: 3px; }',
+    '.collapsible_panel_icon::before { content: ""; display: block; width: 8px; height: 8px; border-right: 2px solid #605e5c; border-bottom: 2px solid #605e5c; transform: rotate(-45deg); transition: transform .15s ease; }',
+    'div.collapsible_panel_head.kb-open .collapsible_panel_icon::before { transform: rotate(45deg); margin-top: -4px; }',
+    'span.collapsible_panel_head { display: block; padding: 0; cursor: default; }',
+    'span.collapsible_panel_head:hover { background: transparent; }',
+    '[style*=\"Semibold\" i] { font-weight: 600 !important; }',
+    'figure.table { margin: 1em 0; overflow-x: auto; }'
+  ].join('\n  ');
+
+  // Small init script: keeps the chevron icon in sync with the
+  // panel's open/closed state (the original onclick already
+  // toggles body.style.display; we just mirror that into a class).
+  var initScript =
+    '(function(){' +
+    'function sync(head){' +
+      'var body = head.nextElementSibling;' +
+      'if(!body || !body.classList || !body.classList.contains("collapsible_panel_body")) return;' +
+      'if(body.style.display === "block"){ head.classList.add("kb-open"); }' +
+      'else { head.classList.remove("kb-open"); }' +
+    '}' +
+    'var heads = document.querySelectorAll("div.collapsible_panel_head");' +
+    'heads.forEach(function(head){' +
+      'head.addEventListener("click", function(){ setTimeout(function(){ sync(head); }, 0); });' +
+    '});' +
+
+    /* AUTO-FIX KB STANDARD TYPOGRAPHY — runs once on render.
+       Section headings (14pt / Semibold / #243a5e) are normalized to
+       the canonical KB heading style; 12pt black body text is
+       normalized to the canonical KB body style. */
+    'var allEls = document.querySelectorAll("[style]");' +
+    'allEls.forEach(function(el){' +
+      'var s = el.getAttribute("style") || "";' +
+      'var isHeading = /Semibold/i.test(s) || /14pt/.test(s) || /243a5e/i.test(s) || /36,\\s*58,\\s*94/.test(s);' +
+      'var isBody = /12pt/.test(s) && /rgba\\(0,\\s*0,\\s*0/.test(s);' +
+      'if (isHeading) {' +
+        'el.style.setProperty("font-family", "\\"Segoe UI Semibold\\", \\"Segoe UI\\", sans-serif");' +
+        'el.style.setProperty("font-weight", "600");' +
+        'el.style.setProperty("color", "#243a5e");' +
+        'el.style.setProperty("font-size", "14pt");' +
+      '} else if (isBody) {' +
+        'el.style.setProperty("font-family", "\\"Segoe UI\\", \\"Helvetica Neue\\", sans-serif");' +
+        'el.style.setProperty("font-size", "12pt");' +
+      '}' +
+    '});' +
+
+    '})();';
+
+  var scriptTag = '<' + 'script>' + initScript + '<' + '/script>';
+
+  return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><style>' + css + '</style></head><body>' + fragment + scriptTag + '</body></html>';
+}
+function renderToFrame(htmlCode, callback) {
+  const frame = document.getElementById('previewFrame');
+  // Revoke any old blob URL
+  if (frame._blobUrl) { try { URL.revokeObjectURL(frame._blobUrl); } catch(e){} frame._blobUrl = null; }
+
+  const fullHtml = isHtmlFragment(htmlCode) ? wrapFragment(htmlCode) : htmlCode;
+
+  // Use srcdoc for speed — no navigation overhead, scripts execute, same-origin
+  frame.onload = function() {
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    if (callback) callback(doc);
+  };
+
+  // srcdoc is significantly faster than blob URL for large HTML
+  frame.srcdoc = fullHtml;
+}
+
+/* ─── RENDER (main entry) ─── */
+function renderHTML() {
+  const code = document.getElementById('codeInput').value.trim();
+  if (!code) { setStatus('Nothing to render — paste HTML first', false); return; }
+
+  const frame = document.getElementById('previewFrame');
+  document.getElementById('emptyState').style.display = 'none';
+  frame.style.display = 'block';
+  document.getElementById('canvasDot').classList.remove('inactive');
+
+  const modeWrap = document.getElementById('modeToggleWrap');
+  modeWrap.style.opacity = '1';
+  modeWrap.style.pointerEvents = 'auto';
+  modeWrap.removeAttribute('data-tip');
+
+  currentMode = 'preview';
+
+  showOverlay(true);
+  setStatus('Rendering…', false);
+  renderToFrame(code, function(doc) {
+    iframeDoc = doc;
+    updateStats(doc);
+    applyPreviewMode(doc);
+    showOverlay(false);
+    setStatus('Rendered ✓ — Preview mode active', true);
+  });
+}
+
+/* ─── PREVIEW MODE ─── */
+function applyPreviewMode(doc) {
+  try { if (doc.designMode !== 'off') doc.designMode = 'off'; } catch(e) {}
+  document.getElementById('btnPreviewMode').classList.add('active');
+  document.getElementById('btnEditMode').classList.remove('active');
+  document.getElementById('mainToolbar').classList.add('preview-mode');
+  document.getElementById('canvasInner').className = 'canvas-inner preview-mode';
+  document.getElementById('canvasTopLabel').textContent = 'Preview — dropdowns & collapsible panels active';
+  document.getElementById('modeBadge').style.display = 'none';
+}
+
+/* ─── EDIT MODE ─── */
+function applyEditMode(doc) {
+  if (!doc || !doc.body) return;
+  // Use contentEditable — unlike designMode it does NOT reset blob-URL documents
+  try {
+    doc.body.setAttribute('contenteditable', 'true');
+    doc.body.style.outline = 'none';
+    doc.body.style.caretColor = '#0078d4';
+    doc.execCommand('styleWithCSS', false, true);
+    doc.defaultView.focus();
+  } catch(e) {}
+  // Save selection whenever user clicks away from iframe
+  doc.addEventListener('selectionchange', function() {
+    const sel = doc.getSelection();
+    if (sel && sel.rangeCount > 0) _savedRange = sel.getRangeAt(0).cloneRange();
+  });
+  injectListeners(doc);
+  updateStats(doc);
+  document.getElementById('btnEditMode').classList.add('active');
+  document.getElementById('btnPreviewMode').classList.remove('active');
+  document.getElementById('mainToolbar').classList.remove('preview-mode');
+  document.getElementById('canvasInner').className = 'canvas-inner edit-mode';
+  document.getElementById('canvasTopLabel').textContent = 'Edit Mode — click any text to edit';
+  document.getElementById('modeBadge').style.display = 'flex';
+  setStatus('Edit mode — click text to position cursor, then use toolbar', false);
+}
+
+/* ─── MODE SWITCH ─── */
+function setMode(mode) {
+  if (!iframeDoc) return;
+  if (mode === currentMode) return;
+  currentMode = mode;
+  if (mode === 'preview') {
+    // Sync edits, strip contentEditable, then re-render fresh
+    if (iframeDoc.body) iframeDoc.body.removeAttribute('contenteditable');
+    syncCode(true);
+    const code = document.getElementById('codeInput').value.trim();
+    showOverlay(true);
+    renderToFrame(code, function(doc) {
+      iframeDoc = doc;
+      updateStats(doc);
+      applyPreviewMode(doc);
+      showOverlay(false);
+      setStatus('Back to Preview mode — scripts live', true);
+    });
+  } else {
+    applyEditMode(iframeDoc);
+  }
+}
+
+function injectListeners(doc) {
+  doc.addEventListener('selectionchange', () => {
+    const sel = doc.getSelection();
+    if (sel && sel.rangeCount) updateToolbarState(doc);
+  });
+  let _statsTimer = null;
+  const mo = new MutationObserver(() => {
+    syncCode(); // already debounced
+    clearTimeout(_statsTimer);
+    _statsTimer = setTimeout(() => updateStats(doc), 800);
+  });
+  // Only watch structure/text changes, not all attributes (avoids FnR highlight spam)
+  mo.observe(doc.body, { childList: true, subtree: true, characterData: true });
+}
+
+let _syncTimer = null;
+let _lastSyncedHTML = '';
+function syncCode(immediate) {
+  clearTimeout(_syncTimer);
+  const delay = immediate ? 0 : 600;
+  _syncTimer = setTimeout(function() {
+    if (!iframeDoc || !iframeDoc.body) return;
+    var headHTML = iframeDoc.head ? iframeDoc.head.innerHTML : '';
+    var bodyHTML = iframeDoc.body.innerHTML;
+    const html = '<!DOCTYPE html>\n<html>\n<head>' + headHTML +
+      '</head>\n<body>' + bodyHTML + '\n</body>\n</html>';
+    if (html === _lastSyncedHTML) return; // skip if unchanged
+    _lastSyncedHTML = html;
+    document.getElementById('codeInput').value = html;
+    document.getElementById('charCount').textContent = html.length.toLocaleString() + ' chars';
+  }, delay);
+}
+
+function updateStats(doc) {
+  if (!doc || !doc.body) return;
+  document.getElementById('elemCount').textContent = doc.body.querySelectorAll('*').length + ' elements';
+}
+
+/* ─── TOOLBAR COMMANDS ─── */
+let _savedRange = null;
+
+function saveRange() {
+  if (!iframeDoc || currentMode !== 'edit') return;
+  try {
+    const sel = iframeDoc.getSelection();
+    if (sel && sel.rangeCount > 0) _savedRange = sel.getRangeAt(0).cloneRange();
+  } catch(e) {}
+}
+
+function restoreRange() {
+  if (!iframeDoc || !_savedRange) return;
+  try {
+    iframeDoc.defaultView.focus();
+    const sel = iframeDoc.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(_savedRange);
+  } catch(e) {}
+}
+
+function editorCmd(cmd, val) {
+  if (!iframeDoc) return noEditor();
+  if (currentMode !== 'edit') return noEditor('Switch to Edit mode first');
+  restoreRange();
+  try { iframeDoc.execCommand(cmd, false, val || null); } catch(e) {}
+}
+
+function toggleCmd(cmd, btnId) {
+  restoreRange();
+  editorCmd(cmd);
+  document.getElementById(btnId)?.classList.toggle('active');
+}
+
+function applyFont() { restoreRange(); editorCmd('fontName', document.getElementById('fontFamily').value); }
+
+function applyFontSize() {
+  if (!iframeDoc || currentMode !== 'edit') return noEditor('Switch to Edit mode first');
+  const size = parseInt(document.getElementById('fontSize').value) || 14;
+  try { iframeDoc.defaultView.focus(); } catch(e) {}
+  const sel = iframeDoc.getSelection();
+  if (!sel || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const span = iframeDoc.createElement('span');
+  span.style.fontSize = size + 'px';
+  try { range.surroundContents(span); } catch(e) {}
+}
+
+function applyTextColor() { restoreRange(); editorCmd('foreColor', document.getElementById('txtColor').value); }
+function applyHighlight() { restoreRange(); editorCmd('hiliteColor', document.getElementById('hlColor').value); }
+function applyHeading() { restoreRange(); editorCmd('formatBlock', document.getElementById('headingLevel').value); }
+
+function wrapSelection(tag) {
+  if (!iframeDoc || currentMode !== 'edit') return noEditor('Switch to Edit mode first');
+  try { iframeDoc.defaultView.focus(); } catch(e) {}
+  const sel = iframeDoc.getSelection();
+  if (!sel || sel.isCollapsed) return noEditor('Select text first');
+  const range = sel.getRangeAt(0);
+  const el = iframeDoc.createElement(tag);
+  try { range.surroundContents(el); } catch(e) {}
+}
+
+function updateToolbarState(doc) {
+  [['bold','btnBold'],['italic','btnItalic'],['underline','btnUnderline'],['strikethrough','btnStrike']]
+    .forEach(([cmd, id]) => {
+      try { document.getElementById(id)?.classList.toggle('active', doc.queryCommandState(cmd)); } catch(e) {}
+    });
+}
+
+/* ─── COPY HTML ─── */
+function copyHTML() {
+  const code = document.getElementById('codeInput').value;
+  if (!code.trim()) { setStatus('Nothing to copy — render HTML first', false); return; }
+
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const txt = document.getElementById('copyBtnText');
+    btn.classList.add('copied');
+    txt.textContent = 'Copied!';
+    setStatus('HTML copied to clipboard ✓', true);
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      txt.textContent = 'Copy HTML';
+    }, 2200);
+  }).catch(() => {
+    // Fallback for browsers without clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn = document.getElementById('copyBtn');
+    const txt = document.getElementById('copyBtnText');
+    btn.classList.add('copied');
+    txt.textContent = 'Copied!';
+    setStatus('HTML copied to clipboard ✓', true);
+    setTimeout(() => { btn.classList.remove('copied'); txt.textContent = 'Copy HTML'; }, 2200);
+  });
+}
+
+/* ─── LINK EDITOR ─── */
+function openLinkEditor() {
+  if (!iframeDoc) return noEditor();
+  const sel = iframeDoc.getSelection();
+  if (sel && sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+  const popup = document.getElementById('linkPopup');
+  popup.classList.add('open');
+  popup.style.top = '104px';
+  popup.style.right = '20px';
+}
+function closeLinkPopup() { document.getElementById('linkPopup').classList.remove('open'); }
+function applyLink() {
+  const url = document.getElementById('linkUrl').value;
+  const text = document.getElementById('linkText').value;
+  const target = document.getElementById('linkTarget').value;
+  if (!url) return;
+  if (savedRange) {
+    try { iframeDoc.defaultView.focus(); } catch(e) {}
+    const sel = iframeDoc.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+  if (text) {
+    iframeDoc.execCommand('insertHTML', false, `<a href="${url}" target="${target}">${text}</a>`);
+  } else {
+    iframeDoc.execCommand('createLink', false, url);
+    iframeDoc.querySelectorAll(`a[href="${url}"]`).forEach(l => l.target = target);
+  }
+  closeLinkPopup();
+  document.getElementById('linkUrl').value = '';
+  document.getElementById('linkText').value = '';
+}
+
+/* ─── IMAGE EDITOR ─── */
+function openImageEditor() {
+  if (!iframeDoc) return noEditor();
+  const imgs = iframeDoc.querySelectorAll('img');
+  if (!imgs.length) return noEditor('No images found in the document');
+  const list = Array.from(imgs).map((img, i) =>
+    `${i + 1}. ${(img.src || '(no src)').substring(0, 60)}`).join('\n');
+  const choice = prompt(`Found ${imgs.length} image(s):\n${list}\n\nEnter number to edit:`, '1');
+  if (!choice) return;
+  const idx = parseInt(choice) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= imgs.length) return;
+  const img = imgs[idx];
+  const newSrc = prompt('New image URL:', img.src);
+  if (newSrc !== null) {
+    img.src = newSrc;
+    const altText = prompt('Alt text:', img.alt);
+    if (altText !== null) img.alt = altText;
+    syncCode();
+    setStatus('Image updated', true);
+  }
+}
+
+/* ─── FORMAT CODE ─── */
+function formatCode() {
+  const ta = document.getElementById('codeInput');
+  let indent = 0;
+  const lines = ta.value.split('\n').map(line => {
+    const t = line.trim();
+    if (!t) return '';
+    if (t.match(/^<\/(div|section|article|header|footer|main|nav|ul|ol|table|tr|tbody|thead|tfoot|head|body|html)/i)) indent = Math.max(0, indent - 1);
+    const out = '  '.repeat(indent) + t;
+    if (t.match(/^<(div|section|article|header|footer|main|nav|ul|ol|table|tr|tbody|thead|tfoot|head|body|html)[^/]*>(?!.*<\/)/i)) indent++;
+    return out;
+  });
+  ta.value = lines.join('\n');
+  setStatus('Code formatted', true);
+}
+
+/* ─── EXPORT ─── */
+function headerCopyHTML() {
+  const code = document.getElementById('codeInput').value;
+  if (!code.trim()) { setStatus('Nothing to copy — render HTML first', false); return; }
+  const btn   = document.getElementById('btnHeaderCopy');
+  const label = document.getElementById('btnHeaderCopyLabel');
+  navigator.clipboard.writeText(code).then(() => {
+    label.textContent = 'Copied!';
+    btn.style.background = '#fff';
+    btn.style.color = '#107c10';
+    setStatus('HTML code copied to clipboard ✓', true);
+    setTimeout(() => {
+      label.textContent = 'Copy HTML Code';
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 2200);
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    label.textContent = 'Copied!';
+    setTimeout(() => { label.textContent = 'Copy HTML Code'; }, 2200);
+    setStatus('HTML code copied ✓', true);
+  });
+}
+
+function exportHTML() {
+  const code = document.getElementById('codeInput').value;
+  if (!code.trim()) { setStatus('Nothing to export', false); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([code], { type: 'text/html' }));
+  a.download = 'edited-page.html';
+  a.click();
+  setStatus('Exported as edited-page.html ✓', true);
+}
+
+function exportPreparedHTML() {
+  prepareForDynamics();
+  exportHTML();
+}
+
+
+function clearAll() {
+  if (!confirm('Reset everything? This cannot be undone.')) return;
+  document.getElementById('codeInput').value = '';
+  document.getElementById('previewFrame').style.display = 'none';
+  document.getElementById('emptyState').style.display = '';
+  document.getElementById('modeBadge').style.display = 'none';
+  document.getElementById('canvasDot').classList.add('inactive');
+  document.getElementById('canvasInner').className = 'canvas-inner';
+  document.getElementById('mainToolbar').classList.remove('preview-mode');
+  document.getElementById('canvasTopLabel').textContent = 'Live Canvas';
+  document.getElementById('btnPreviewMode').classList.add('active');
+  document.getElementById('btnEditMode').classList.remove('active');
+  const modeWrap = document.getElementById('modeToggleWrap');
+  modeWrap.style.opacity = '0.4';
+  modeWrap.style.pointerEvents = 'none';
+  modeWrap.setAttribute('data-tip', 'Render HTML first to switch modes');
+  iframeDoc = null;
+  currentMode = 'preview';
+  setStatus('Reset', false);
+  document.getElementById('charCount').textContent = '0 chars';
+  document.getElementById('elemCount').textContent = '0 elements';
+}
+
+/* ─── OVERLAY ─── */
+function showOverlay(show) {
+  const o = document.getElementById('renderOverlay');
+  if (!o) return;
+  o.style.display = show ? 'flex' : 'none';
+}
+
+/* ─── STATUS ─── */
+function setStatus(msg, live) {
+  document.getElementById('statusText').textContent = msg;
+  document.getElementById('statusDot').className = 'status-dot' + (live ? ' live' : '');
+}
+function noEditor(msg) { setStatus(msg || 'Render HTML first to enter edit mode', false); }
+
+/* ─── LIVE CHAR COUNT ─── */
+document.getElementById('codeInput').addEventListener('input', function() {
+  document.getElementById('charCount').textContent = this.value.length.toLocaleString() + ' chars';
+});
+
+/* ═══════════════════════════════════════════
+   FIND & REPLACE ENGINE
+═══════════════════════════════════════════ */
+const FNR = {
+  matches: [],
+  srcMatches: [],
+  currentIdx: -1,
+  opts: { case: false, word: false, regex: false },
+};
+
+function toggleFnR() {
+  const bar = document.getElementById('fnrBar');
+  const btn = document.getElementById('btnFnR');
+  const isOpen = bar.classList.contains('open');
+  if (isOpen) { closeFnR(); }
+  else {
+    bar.classList.add('open');
+    btn.style.background = 'var(--accent-light)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.color = 'var(--accent)';
+    setTimeout(() => document.getElementById('fnrFind').focus(), 100);
+  }
+}
+
+function closeFnR() {
+  document.getElementById('fnrBar').classList.remove('open');
+  document.getElementById('btnFnR').style.background='var(--surface2)';document.getElementById('btnFnR').style.borderColor='var(--border)';document.getElementById('btnFnR').style.color='var(--text)';
+  clearHighlights();
+  FNR.matches = [];
+  FNR.srcMatches = [];
+  FNR.currentIdx = -1;
+  updateFnRCount();
+}
+
+function fnrToggleOption(opt) {
+  FNR.opts[opt] = !FNR.opts[opt];
+  const id = 'toggle' + opt.charAt(0).toUpperCase() + opt.slice(1);
+  document.getElementById(id).classList.toggle('on', FNR.opts[opt]);
+  fnrSearch();
+}
+
+function buildRegex(term) {
+  if (!term) return null;
+  const flags = 'g' + (FNR.opts.case ? '' : 'i');
+  let pattern = FNR.opts.regex ? term : term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (FNR.opts.word) pattern = '\\b' + pattern + '\\b';
+  try { return new RegExp(pattern, flags); }
+  catch(e) { return null; }
+}
+
+/* Text node walker — skips script/style */
+function getTextNodes(root) {
+  const doc = root.ownerDocument;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      const tag = (n.parentNode && n.parentNode.tagName || '').toLowerCase();
+      if (['script','style','noscript'].includes(tag)) return NodeFilter.FILTER_REJECT;
+      if (!n.nodeValue.trim()) return NodeFilter.FILTER_SKIP;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes = [];
+  let n;
+  while ((n = walker.nextNode())) nodes.push(n);
+  return nodes;
+}
+
+function clearHighlights() {
+  if (!iframeDoc || !iframeDoc.body) return;
+  iframeDoc.body.querySelectorAll('span[data-fnr]').forEach(span => {
+    const parent = span.parentNode;
+    if (!parent) return;
+    while (span.firstChild) parent.insertBefore(span.firstChild, span);
+    parent.removeChild(span);
+    parent.normalize();
+  });
+}
+
+function highlightMatches(textNodes, regex) {
+  FNR.matches = [];
+  textNodes.forEach(node => {
+    const val = node.nodeValue;
+    const ranges = [];
+    regex.lastIndex = 0;
+    let m;
+    while ((m = regex.exec(val)) !== null)
+      ranges.push({ start: m.index, end: m.index + m[0].length, text: m[0] });
+    if (!ranges.length) return;
+
+    const parent = node.parentNode;
+    if (!parent) return;
+    const frag = iframeDoc.createDocumentFragment();
+    let last = 0;
+    ranges.forEach(r => {
+      if (r.start > last) frag.appendChild(iframeDoc.createTextNode(val.slice(last, r.start)));
+      const span = iframeDoc.createElement('span');
+      span.setAttribute('data-fnr', String(FNR.matches.length));
+      span.style.cssText = 'background:#fff2a8;outline:1px solid #e6c000;border-radius:2px;padding:0 1px;';
+      span.textContent = r.text;
+      frag.appendChild(span);
+      FNR.matches.push(span);
+      last = r.end;
+    });
+    if (last < val.length) frag.appendChild(iframeDoc.createTextNode(val.slice(last)));
+    parent.replaceChild(frag, node);
+  });
+}
+
+function activateMatch(idx) {
+  FNR.matches.forEach(s => {
+    if (s && s.style) s.style.cssText = 'background:#fff2a8;outline:1px solid #e6c000;border-radius:2px;padding:0 1px;';
+  });
+  if (idx < 0 || idx >= FNR.matches.length) return;
+  const span = FNR.matches[idx];
+  if (!span) return;
+  span.style.cssText = 'background:#e67e00;color:#fff;outline:2px solid #c45900;border-radius:2px;padding:0 1px;font-weight:600;';
+  span.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  FNR.currentIdx = idx;
+}
+
+function fnrSearch() {
+  const term = document.getElementById('fnrFind').value;
+  const scope = document.getElementById('fnrScope').value;
+  document.getElementById('fnrMsg').textContent = '';
+  document.getElementById('fnrFind').classList.remove('has-error');
+
+  if (!term) {
+    clearHighlights();
+    FNR.matches = []; FNR.srcMatches = []; FNR.currentIdx = -1;
+    updateFnRCount(); return;
+  }
+
+  const regex = buildRegex(term);
+  if (!regex) {
+    document.getElementById('fnrFind').classList.add('has-error');
+    const c = document.getElementById('fnrCount');
+    c.textContent = 'Bad regex'; c.className = 'fnr-match-count none'; return;
+  }
+
+  // Source code search
+  if (scope === 'source' || scope === 'both') {
+    const val = document.getElementById('codeInput').value;
+    FNR.srcMatches = [];
+    regex.lastIndex = 0;
+    let m;
+    while ((m = regex.exec(val)) !== null)
+      FNR.srcMatches.push({ start: m.index, end: m.index + m[0].length });
+  }
+
+  // Canvas search
+  if (scope === 'canvas' || scope === 'both') {
+    if (!iframeDoc || !iframeDoc.body) {
+      setStatus('Render HTML first to search the canvas', false);
+      FNR.matches = []; updateFnRCount(); return;
+    }
+    if (currentMode !== 'edit') {
+      setStatus('Switch to Edit mode to highlight matches in canvas', false);
+      FNR.matches = []; updateFnRCount(); return;
+    }
+    clearHighlights();
+    const nodes = getTextNodes(iframeDoc.body);
+    highlightMatches(nodes, regex);
+    FNR.currentIdx = FNR.matches.length > 0 ? 0 : -1;
+    if (FNR.currentIdx === 0) activateMatch(0);
+  }
+
+  updateFnRCount();
+}
+
+function updateFnRCount() {
+  const el = document.getElementById('fnrCount');
+  const scope = document.getElementById('fnrScope').value;
+  const term = document.getElementById('fnrFind').value;
+  if (!term) { el.textContent = '—'; el.className = 'fnr-match-count'; return; }
+  const total = scope === 'source' ? FNR.srcMatches.length : FNR.matches.length;
+  if (total === 0) {
+    el.textContent = 'No match'; el.className = 'fnr-match-count none';
+  } else {
+    const cur = FNR.currentIdx + 1;
+    el.textContent = `${cur} / ${total}`; el.className = 'fnr-match-count found';
+  }
+}
+
+function fnrNav(dir) {
+  if (!FNR.matches.length) return;
+  let next = FNR.currentIdx + dir;
+  if (next < 0) next = FNR.matches.length - 1;
+  if (next >= FNR.matches.length) next = 0;
+  activateMatch(next);
+  updateFnRCount();
+}
+
+function fnrKeyNav(e) {
+  if (e.key === 'Enter') { e.preventDefault(); fnrNav(e.shiftKey ? -1 : 1); }
+  if (e.key === 'Escape') { e.preventDefault(); closeFnR(); }
+}
+function fnrReplaceKey(e) {
+  if (e.key === 'Enter') { e.preventDefault(); fnrReplaceCurrent(); }
+  if (e.key === 'Escape') { e.preventDefault(); closeFnR(); }
+}
+
+function fnrReplaceCurrent() {
+  const replacement = document.getElementById('fnrReplace').value;
+  const scope = document.getElementById('fnrScope').value;
+
+  if (scope === 'canvas' || scope === 'both') {
+    if (FNR.currentIdx < 0 || !FNR.matches.length) return noEditor('No match selected in canvas');
+    const span = FNR.matches[FNR.currentIdx];
+    if (!span || !span.parentNode) return;
+    span.parentNode.replaceChild(iframeDoc.createTextNode(replacement), span);
+    FNR.matches.splice(FNR.currentIdx, 1);
+    syncCode();
+    // Keep index in bounds and re-activate
+    FNR.currentIdx = Math.min(FNR.currentIdx, FNR.matches.length - 1);
+    activateMatch(FNR.currentIdx);
+    updateFnRCount();
+    showFnRMsg('Replaced 1 occurrence');
+  }
+  if (scope === 'source') {
+    const n = replaceInSource(false);
+    showFnRMsg(`Replaced ${n} occurrence in source`);
+  }
+}
+
+function fnrReplaceAll() {
+  const replacement = document.getElementById('fnrReplace').value;
+  const scope = document.getElementById('fnrScope').value;
+  let count = 0;
+
+  if (scope === 'canvas' || scope === 'both') {
+    if (!iframeDoc || !iframeDoc.body) return noEditor('Render HTML first');
+    [...FNR.matches].forEach(span => {
+      if (span && span.parentNode) {
+        span.parentNode.replaceChild(iframeDoc.createTextNode(replacement), span);
+        count++;
+      }
+    });
+    FNR.matches = []; FNR.currentIdx = -1;
+    syncCode();
+    fnrSearch();
+  }
+
+  if (scope === 'source' || scope === 'both') {
+    const n = replaceInSource(true);
+    if (scope !== 'both') count = n;
+    else count += n;
+  }
+
+  showFnRMsg(`Replaced ${count} occurrence${count !== 1 ? 's' : ''}`);
+  updateFnRCount();
+}
+
+function replaceInSource(all) {
+  const term = document.getElementById('fnrFind').value;
+  const replacement = document.getElementById('fnrReplace').value;
+  if (!term) return 0;
+  const regex = buildRegex(term);
+  if (!regex) return 0;
+  const ta = document.getElementById('codeInput');
+  let count = 0;
+  if (all) {
+    ta.value = ta.value.replace(regex, () => { count++; return replacement; });
+  } else {
+    let done = false;
+    ta.value = ta.value.replace(regex, match => {
+      if (!done) { done = true; count++; return replacement; }
+      return match;
+    });
+  }
+  document.getElementById('charCount').textContent = ta.value.length.toLocaleString() + ' chars';
+  return count;
+}
+
+function showFnRMsg(text) {
+  const el = document.getElementById('fnrMsg');
+  el.style.color = 'var(--success)';
+  el.textContent = '✓ ' + text;
+  setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+
+
+
+/* ═══════════════════════════════════════════════════
+   TEXT → HTML CONVERTER
+   Applies KB Standard Article Guidelines
+═══════════════════════════════════════════════════ */
+
+let _inputMode = 'html'; // 'html' | 'text'
+
+function switchInputMode(mode) {
+  _inputMode = mode;
+  const isText = mode === 'text';
+
+  // Toggle areas
+  document.getElementById('htmlModeArea').style.display  = isText ? 'none' : '';
+  document.getElementById('textModeArea').style.display  = isText ? '' : 'none';
+  document.getElementById('htmlModeActions').style.display = isText ? 'none' : 'flex';
+  document.getElementById('textModeActions').style.display = isText ? 'flex' : 'none';
+  document.getElementById('btnFormatCode').style.display   = isText ? 'none' : '';
+
+  // Toggle buttons
+  document.getElementById('btnModeHTML').classList.toggle('active', !isText);
+  document.getElementById('btnModeText').classList.toggle('active',  isText);
+
+  // Label
+  document.getElementById('panelModeLabel').textContent = isText ? 'Text Input' : 'HTML Source';
+
+  // Clear badge
+  document.getElementById('convertBadge').textContent = '';
+  document.getElementById('convertMsg').textContent = '';
+
+  if (isText) document.getElementById('textInput').focus();
+  else        document.getElementById('codeInput').focus();
+}
+
+function clearTextInput() {
+  document.getElementById('textInput').value = '';
+  document.getElementById('convertBadge').textContent = '';
+  document.getElementById('convertMsg').textContent = '';
+  document.getElementById('textInput').focus();
+}
+
+/* ── Main converter ── */
+function convertTextToHTML() {
+  const raw = document.getElementById('textInput').value.trim();
+  if (!raw) {
+    showConvertMsg('Paste some text first', false);
+    return;
+  }
+
+  try {
+    const html = textToKBHtml(raw);
+    document.getElementById('codeInput').value = html;
+    document.getElementById('charCount').textContent = html.length.toLocaleString() + ' chars';
+    showConvertMsg('Converted — click Render & Edit to preview', true);
+
+    // Auto-switch back to HTML mode and show code
+    switchInputMode('html');
+    // Auto render
+    renderHTML();
+  } catch(e) {
+    showConvertMsg('Conversion error: ' + e.message, false);
+  }
+}
+
+function showConvertMsg(msg, ok) {
+  const badge = document.getElementById('convertBadge');
+  const text  = document.getElementById('convertMsg');
+  badge.className = 'convert-badge ' + (ok ? 'ok' : 'err');
+  badge.textContent = ok ? '✓' : '✗';
+  text.textContent = msg;
+}
+
+/* ── Core text parser → KB-standard HTML ── */
+function textToKBHtml(raw) {
+  const lines = raw.split(/\r?\n/);
+  let html = '';
+  let i = 0;
+  let inList = null;   // 'ul' | 'ol' | null
+  let listDepth = 0;
+
+  const STYLES = {
+    section: 'font-family:\"Segoe UI Semibold\",\"Segoe UI\",sans-serif;font-size:14pt;font-weight:600;color:#243a5e;margin:16px 0 4px;',
+    body:    'font-family:\"Segoe UI\",\"Helvetica Neue\",sans-serif;font-size:12pt;color:#201f1e;margin:4px 0;',
+    note:    'font-family:\"Segoe UI Semibold\",\"Segoe UI\",sans-serif;font-size:12pt;font-weight:600;color:#a4262c;margin:8px 0;', // dark red
+    best:    'font-family:\"Segoe UI Semibold\",\"Segoe UI\",sans-serif;font-size:12pt;font-weight:600;color:#4b2b7f;margin:8px 0;', // dark purple
+    li:      'font-family:\"Segoe UI\",\"Helvetica Neue\",sans-serif;font-size:12pt;color:#201f1e;',
+  };
+
+  function closeLists() {
+    while (listDepth > 0) {
+      html += '</' + inList + '>\n';
+      listDepth--;
+    }
+    inList = null;
+  }
+
+  function isHeading(line) {
+    const t = line.trim();
+    if (!t) return false;
+    // ALL CAPS and > 4 chars
+    if (t.length > 4 && t === t.toUpperCase() && /[A-Z]/.test(t)) return true;
+    // Short line ≤ 60 chars, no period at end (typical heading)
+    if (t.length <= 60 && !t.endsWith('.') && !t.endsWith(',') && !t.startsWith('•') && !/^[0-9]+\./.test(t) && !/^[a-z]\)/.test(t)) {
+      // Next line is blank or another heading → likely a heading
+      const next = lines[i + 1];
+      if (next === undefined || next.trim() === '') return true;
+    }
+    return false;
+  }
+
+  function isNote(line) {
+    return /^!?\s*(note|important\s*note)\s*:/i.test(line.trim());
+  }
+
+  function isBestPractice(line) {
+    return /^!?\s*(best practice|tip|best practice note)\s*:/i.test(line.trim());
+  }
+
+  function isBullet(line) {
+    return /^[\s]*[•\-\*○◦]\s/.test(line);
+  }
+
+  function isOrdered(line) {
+    return /^[\s]*(\d+)\.\s/.test(line) || /^[\s]*[a-z]\)\s/.test(line);
+  }
+
+  function nestLevel(line) {
+    const indent = line.match(/^(\s*)/)[1].length;
+    if (indent === 0) return 1;
+    if (indent <= 4) return 2;
+    return 2; // cap at 2
+  }
+
+  function stripBullet(line) {
+    return line.replace(/^[\s]*[•\-\*○◦]\s*/, '').replace(/^[\s]*(\d+)\.\s*/, '').replace(/^[\s]*[a-z]\)\s*/, '').trim();
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function boldLinks(s) {
+    // Convert **text** to <strong>
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Convert plain URLs to links
+    s = s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
+    return s;
+  }
+
+  // Build header
+  html += '<!DOCTYPE html>\n<html lang="en">\n<head>\n';
+  html += '<meta charset="UTF-8"/>\n';
+  html += '<style>body{font-family:"Segoe UI","Helvetica Neue",sans-serif;font-size:12pt;margin:16px 24px;color:#201f1e;line-height:1.6;}a{color:#0078d4;}ul,ol{margin:4px 0;padding-left:2em;}li{margin:2px 0;}</style>\n';
+  html += '</head>\n<body>\n';
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Blank line → close lists
+    if (!trimmed) {
+      closeLists();
+      i++;
+      continue;
+    }
+
+    // Note / disclaimer
+    if (isNote(trimmed)) {
+      closeLists();
+      html += '<p style="' + STYLES.note + '">' + boldLinks(escHtml(trimmed)) + '</p>\n';
+      i++; continue;
+    }
+
+    if (isBestPractice(trimmed)) {
+      closeLists();
+      html += '<p style="' + STYLES.best + '">' + boldLinks(escHtml(trimmed)) + '</p>\n';
+      i++; continue;
+    }
+
+    // Bullet list
+    if (isBullet(line)) {
+      const depth = nestLevel(line);
+      const listType = 'ul';
+      if (!inList) { html += '<ul>\n'; inList = 'ul'; listDepth = 1; }
+      else if (depth > listDepth) { html += '<ul>\n'; listDepth++; }
+      else if (depth < listDepth) { html += '</ul>\n'; listDepth--; }
+      html += '<li style="' + STYLES.li + '">' + boldLinks(escHtml(stripBullet(line))) + '</li>\n';
+      i++; continue;
+    }
+
+    // Ordered list
+    if (isOrdered(line)) {
+      const depth = nestLevel(line);
+      const listType = /^[\s]*[a-z]\)/.test(line) ? 'ol' : 'ol';
+      if (!inList) { html += '<ol>\n'; inList = 'ol'; listDepth = 1; }
+      else if (depth > listDepth) { html += '<ol type="a">\n'; listDepth++; }
+      else if (depth < listDepth) { html += '</ol>\n'; listDepth--; }
+      html += '<li style="' + STYLES.li + '">' + boldLinks(escHtml(stripBullet(line))) + '</li>\n';
+      i++; continue;
+    }
+
+    // Heading
+    closeLists();
+    if (isHeading(trimmed) && i > 0) {
+      // Skip first line if it looks like a title — render as H1
+      const prevBlank = !lines[i-1] || !lines[i-1].trim();
+      html += '<h3 style="' + STYLES.section + '">' + boldLinks(escHtml(trimmed)) + '</h3>\n';
+      i++; continue;
+    }
+
+    // First line = article title
+    if (i === 0 && trimmed.length > 0) {
+      html += '<h1 style="font-family:\"Segoe UI Semibold\",\"Segoe UI\",sans-serif;font-size:18pt;font-weight:700;color:#243a5e;margin:0 0 12px;">' + boldLinks(escHtml(trimmed)) + '</h1>\n';
+      i++; continue;
+    }
+
+    // Regular paragraph
+    html += '<p style="' + STYLES.body + '">' + boldLinks(escHtml(trimmed)) + '</p>\n';
+    i++;
+  }
+
+  closeLists();
+  html += '</body>\n</html>';
+  return html;
+}
+
+
+/* ═══════════════════════════════════════════════════
+   KB STANDARDS CHECKER
+   Rules from: Standard Article Guidelines
+═══════════════════════════════════════════════════ */
+
+const KB_STANDARDS = {
+  fonts:      ['Segoe UI', 'Segoe UI Semibold'],
+  sectionSize: 14,
+  bodySize:    12,
+  sectionColor: '#243a5e',
+  maxNestLevel: 2,
+};
+
+function toggleStandards() {
+  const panel = document.getElementById('standardsPanel');
+  const btn   = document.getElementById('btnStandards');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    btn.classList.remove('active');
+  } else {
+    panel.classList.add('open');
+    btn.classList.add('active');
+    if (iframeDoc) runStandardsCheck();
+  }
+}
+
+function runStandardsCheck() {
+  if (!iframeDoc || !iframeDoc.body) {
+    document.getElementById('standardsBody').innerHTML =
+      '<div style="color:var(--text-dim);font-size:12px;padding:20px 8px;text-align:center">Render HTML first to run standards check.</div>';
+    return;
+  }
+
+  const doc  = iframeDoc;
+  const body = doc.body;
+  const results = [];
+
+  /* ── HELPER ── */
+  function add(cat, status, title, detail) {
+    results.push({ cat, status, title, detail });
+  }
+  function getComputedStyleProp(el, prop) {
+    try { return doc.defaultView.getComputedStyle(el)[prop] || ''; } catch(e) { return ''; }
+  }
+  function ptFromPx(px) { return Math.round(parseFloat(px) * 0.75); }
+
+  /* ═══ 1. IMAGES — alt text ═══ */
+  const imgs = [...body.querySelectorAll('img')];
+  if (imgs.length === 0) {
+    add('Images', 'info', 'No images found', 'Add screenshots or diagrams to support the article.');
+  } else {
+    const noAlt = imgs.filter(i => !i.alt || !i.alt.trim());
+    if (noAlt.length === 0) {
+      add('Images', 'pass', 'All images have alt text', imgs.length + ' image(s) checked ✓');
+    } else {
+      add('Images', 'fail', noAlt.length + ' image(s) missing alt text',
+        'Alt text is required for accessibility. Click to highlight.', noAlt);
+    }
+    // Check for clear/legible mention (can't auto-check quality, just remind)
+    add('Images', 'info', 'Image quality reminder',
+      'Ensure screenshots are clear and legible. Use blue outlines on light bg, orange on dark bg.');
+  }
+
+  /* ═══ 2. LINKS — descriptive text ═══ */
+  const links = [...body.querySelectorAll('a[href]')];
+  if (links.length === 0) {
+    add('Links', 'info', 'No links found', 'Consider adding internal/external references where helpful.');
+  } else {
+    const badLinks = links.filter(a => {
+      const t = a.textContent.trim().toLowerCase();
+      return !t || t === 'click here' || t === 'here' || t === 'link' || /^https?:\/\//i.test(t);
+    });
+    if (badLinks.length === 0) {
+      add('Links', 'pass', 'All links have descriptive text', links.length + ' link(s) checked ✓');
+    } else {
+      add('Links', 'fail', badLinks.length + ' link(s) have non-descriptive text',
+        'Avoid "click here", "here", or raw URLs as link text.', badLinks);
+    }
+  }
+
+  /* ═══ 3. FONTS ═══ */
+  const textEls = [...body.querySelectorAll('p, span, td, li, h1, h2, h3, h4, div')].filter(el => el.children.length === 0 && el.textContent.trim());
+  let wrongFont = [];
+  textEls.slice(0, 60).forEach(el => {
+    const ff = getComputedStyleProp(el, 'fontFamily');
+    const hasSegoe = ff.toLowerCase().includes('segoe');
+    if (!hasSegoe) wrongFont.push(el);
+  });
+  if (wrongFont.length === 0) {
+    add('Formatting', 'pass', 'Fonts comply with standard', 'Segoe UI / Segoe UI Semibold detected ✓');
+  } else {
+    add('Formatting', 'warn', wrongFont.length + ' element(s) may use non-standard font',
+      'Standard requires Segoe UI or Segoe UI Semibold only.', wrongFont.slice(0, 5));
+  }
+
+  /* ═══ 4. SECTION HEADINGS — 14pt #243a5e ═══ */
+  const headings = [...body.querySelectorAll('h1,h2,h3,h4,[style*="14pt"],[style*="Semibold"]')];
+  if (headings.length > 0) {
+    const badHeadings = headings.filter(h => {
+      const color = getComputedStyleProp(h, 'color');
+      // Convert rgb to check
+      const isBlue = h.style.color && (h.style.color.includes('36,58,94') || h.style.color.includes('#243a5e') || h.style.color.toLowerCase().includes('243a5e'));
+      return !isBlue && !h.style.color.includes('#243a5e');
+    });
+    if (badHeadings.length === 0 || badHeadings.length === headings.length) {
+      add('Formatting', 'info', 'Section heading color check',
+        'Verify section headings use 14pt Segoe UI Semibold in #243a5e (strong blue).');
+    } else {
+      add('Formatting', 'warn', 'Some headings may not match standard color',
+        'Section headings should be #243a5e (strong blue), 14pt, Segoe UI Semibold.');
+    }
+  } else {
+    add('Formatting', 'info', 'No headings detected',
+      'Use 14pt Segoe UI Semibold in #243a5e for section titles.');
+  }
+
+  /* ═══ 5. BODY TEXT SIZE — 12pt ═══ */
+  const bodyTextEls = [...body.querySelectorAll('p, li, td')].filter(el => el.textContent.trim());
+  let wrongSize = 0;
+  bodyTextEls.slice(0, 40).forEach(el => {
+    const fs = getComputedStyleProp(el, 'fontSize');
+    if (fs) {
+      const pt = ptFromPx(fs);
+      if (pt !== 0 && pt !== 12 && pt !== 14) wrongSize++;
+    }
+  });
+  if (wrongSize === 0) {
+    add('Formatting', 'pass', 'Body text size looks correct', 'Regular text at 12pt standard ✓');
+  } else {
+    add('Formatting', 'warn', wrongSize + ' element(s) may have non-standard text size',
+      'Regular body text should be 12pt. Section titles should be 14pt.');
+  }
+
+  /* ═══ 6. TEXT ALIGNMENT — left aligned ═══ */
+  const centered = [...body.querySelectorAll('[style*="center"],[align="center"]')]
+    .filter(el => el.tagName !== 'TABLE' && el.tagName !== 'FIGURE');
+  if (centered.length === 0) {
+    add('Structure', 'pass', 'Text alignment is left-aligned', 'No center-aligned body text found ✓');
+  } else {
+    add('Structure', 'warn', centered.length + ' element(s) are center-aligned',
+      'Standard requires left text alignment for readability.', centered);
+  }
+
+  /* ═══ 7. LIST NESTING — max 2 levels ═══ */
+  function maxNestDepth(root) {
+    let max = 0;
+    function walk(el, depth) {
+      if (['UL','OL'].includes(el.tagName)) depth++;
+      if (depth > max) max = depth;
+      [...el.children].forEach(c => walk(c, depth));
+    }
+    walk(root, 0);
+    return max;
+  }
+  const nestDepth = maxNestDepth(body);
+  if (nestDepth <= 2) {
+    add('Structure', 'pass', 'List nesting within 2 levels', 'Max nesting depth: ' + nestDepth + ' ✓');
+  } else {
+    add('Structure', 'fail', 'List nesting exceeds 2 levels (found ' + nestDepth + ')',
+      'Standard allows maximum 2 levels of nesting. Remove deeply nested lists.');
+  }
+
+  /* ═══ 8. CRITICAL DISCLAIMERS — check for Note/Warning text ═══ */
+  const noteEls = [...body.querySelectorAll('*')].filter(el =>
+    el.children.length === 0 && /^!\s*note|important|warning|disclaimer|caution/i.test(el.textContent.trim()));
+  if (noteEls.length > 0) {
+    const badNotes = noteEls.filter(el => {
+      const color = getComputedStyleProp(el, 'color');
+      // Check for dark purple or dark red
+      return !el.style.color;
+    });
+    if (badNotes.length > 0) {
+      add('Structure', 'warn', 'Disclaimer/Note styling check',
+        'Critical notes should use dark red (important) or dark purple (best practices) in Segoe UI Semibold 12pt.');
+    } else {
+      add('Structure', 'pass', 'Disclaimer styling found', 'Color-coded disclaimers detected ✓');
+    }
+  }
+
+  /* ═══ 9. ARTICLE TITLE ═══ */
+  const titleEls = [...body.querySelectorAll('h1, [style*="24pt"], [style*="20pt"]')];
+  if (titleEls.length === 0) {
+    add('Structure', 'info', 'No article title (H1) found',
+      'Use a clear, action-oriented title in sentence case (e.g., "How to create a Knowledge Article").');
+  } else {
+    const title = titleEls[0].textContent.trim();
+    const isAllCaps = title === title.toUpperCase() && title.length > 3;
+    if (isAllCaps) {
+      add('Structure', 'warn', 'Title may be in ALL CAPS',
+        'Use sentence case for titles: "How to create a Knowledge Article"');
+    } else {
+      add('Structure', 'pass', 'Article title found', '"' + title.slice(0,50) + (title.length>50?'…':'') + '"');
+    }
+  }
+
+
+  /* ═══ 10. COLLAPSIBLE SECTION VISUALS ═══ */
+  const collapsibleSections = [...body.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder')];
+  if (collapsibleSections.length > 0) {
+    const borderIssues = collapsibleSections.filter(sec => {
+      const borderTop = getComputedStyleProp(sec, 'borderTopWidth');
+      const borderStyle = getComputedStyleProp(sec, 'borderTopStyle');
+      return !(parseFloat(borderTop) >= 1 && borderStyle !== 'none');
+    });
+    if (borderIssues.length === 0) {
+      add('Structure', 'pass', 'Collapsible section visuals look standardized', 'Borders/containers detected on all collapsible sections ✓');
+    } else {
+      add('Structure', 'warn', borderIssues.length + ' collapsible section(s) may be missing borders', 'Use bordered containers so expanded sections match KB article styling.');
+    }
+    const titleIssues = collapsibleSections.filter(sec => {
+      const title = sec.querySelector('.collapsible_panel_title, .collapsible_panel_head p, .collapsible_panel_head span');
+      if (!title) return true;
+      const ff = getComputedStyleProp(title, 'fontFamily');
+      const fw = getComputedStyleProp(title, 'fontWeight');
+      return !(ff.toLowerCase().includes('segoe') && (parseInt(fw || '0', 10) >= 600 || /bold|semibold/i.test(fw)));
+    });
+    if (titleIssues.length === 0) {
+      add('Formatting', 'pass', 'Collapsible titles appear semibold', 'Section headers are styled for KB readability ✓');
+    } else {
+      add('Formatting', 'warn', titleIssues.length + ' collapsible title(s) may not be semibold', 'Section titles should remain semibold in Dynamics.');
+    }
+  }
+
+  /* ═══ RENDER RESULTS ═══ */
+  const cats = [...new Set(results.map(r => r.cat))];
+  const passes = results.filter(r => r.status === 'pass').length;
+  const fails  = results.filter(r => r.status === 'fail').length;
+  const warns  = results.filter(r => r.status === 'warn').length;
+  const score  = Math.round((passes / results.length) * 100);
+  const scoreColor = score >= 80 ? '#107c10' : score >= 50 ? '#d47500' : '#c50f1f';
+
+  let html = '';
+  cats.forEach(cat => {
+    html += '<div class="std-section-label">' + cat + '</div>';
+    results.filter(r => r.cat === cat).forEach((r, i) => {
+      const icon = r.status === 'pass' ? '✓' : r.status === 'fail' ? '✗' : r.status === 'warn' ? '⚠' : 'ℹ';
+      const clickable = r.status === 'fail' && r.elements ? ' onclick="stdHighlight(' + results.indexOf(r) + ')"' : '';
+      html += '<div class="std-item ' + r.status + '"' + clickable + '>';
+      html += '<span class="std-icon">' + icon + '</span>';
+      html += '<span class="std-text"><strong>' + r.title + '</strong><span>' + r.detail + '</span></span>';
+      html += '</div>';
+    });
+  });
+
+  document.getElementById('standardsBody').innerHTML = html;
+  document.getElementById('standardsSummary').style.display = 'block';
+  document.getElementById('stdScoreLabel').textContent = passes + ' passed · ' + fails + ' failed · ' + warns + ' warnings';
+  document.getElementById('stdScoreValue').textContent = score + '%';
+  document.getElementById('stdScoreValue').style.color = scoreColor;
+  document.getElementById('stdScoreFill').style.width = score + '%';
+  document.getElementById('stdScoreFill').style.background = scoreColor;
+
+  // Store results for highlighting
+  window._stdResults = results;
+}
+
+function stdHighlight(idx) {
+  const r = window._stdResults && window._stdResults[idx];
+  if (!r || !r.elements || !iframeDoc) return;
+  r.elements.forEach((el, i) => {
+    const prev = el.style.outline;
+    el.style.outline = '2px solid #c50f1f';
+    el.style.outlineOffset = '2px';
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => { el.style.outline = prev || ''; el.style.outlineOffset = ''; }, 3000);
+  });
+}
+
+function applyStandards() {
+  if (!iframeDoc || currentMode !== 'edit') {
+    setStatus('Switch to Edit mode first, then Auto-Fix Standards', false);
+    return;
+  }
+  const doc  = iframeDoc;
+  const body = doc.body;
+  let fixed = 0;
+
+  // Apply base body font
+  body.style.fontFamily = '"Segoe UI", "Helvetica Neue", sans-serif';
+  body.style.fontSize   = '12pt';
+  body.style.color      = '#201f1e';
+  body.style.textAlign  = 'left';
+
+  // Fix paragraph text size and font
+  [...body.querySelectorAll('p, li, td, span')].forEach(el => {
+    if (!el.style.fontSize || el.style.fontSize === '') {
+      el.style.fontFamily = '"Segoe UI", "Helvetica Neue", sans-serif';
+    }
+  });
+
+  // Fix headings to standard
+  [...body.querySelectorAll('h1, h2, h3, h4')].forEach(el => {
+    el.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
+    el.style.fontSize   = '14pt';
+    el.style.color      = '#243a5e';
+    el.style.fontWeight = '600';
+    fixed++;
+  });
+
+  // Normalize collapsible panels for KB / Dynamics rendering
+  [...body.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder')].forEach(section => {
+    section.style.display = 'block';
+    section.style.margin = '0 0 10px 0';
+    section.style.border = '1px solid #d6d6d6';
+    section.style.borderRadius = '4px';
+    section.style.background = '#ffffff';
+    section.style.overflow = 'hidden';
+    const head = section.querySelector('div.collapsible_panel_head, span.collapsible_panel_head');
+    const panelBody = section.querySelector('.collapsible_panel_body');
+    if (head) {
+      head.style.display = 'flex';
+      head.style.alignItems = 'flex-start';
+      head.style.gap = '10px';
+      head.style.padding = '12px 14px';
+      head.style.cursor = 'pointer';
+      head.style.background = '#ffffff';
+      const title = head.querySelector('.collapsible_panel_title');
+      if (title) {
+        title.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
+        title.style.fontWeight = '600';
+        title.style.fontSize = '14pt';
+        title.style.color = '#243a5e';
+      }
+    }
+    if (panelBody) {
+      panelBody.style.padding = '8px 16px 16px 16px';
+      panelBody.style.margin = '0';
+      panelBody.style.borderTop = '1px solid #ececec';
+      panelBody.style.textAlign = 'left';
+    }
+    fixed++;
+  });
+  embedDynamicsToggleScript(doc);
+  // Add missing alt text placeholder
+  [...body.querySelectorAll('img:not([alt])')].forEach(img => {
+    img.alt = '[Image description required]';
+    fixed++;
+  });
+  [...body.querySelectorAll('img[alt=""]')].forEach(img => {
+    img.alt = '[Image description required]';
+    fixed++;
+  });
+
+  // Fix center-aligned non-table elements to left
+  [...body.querySelectorAll('[style*="text-align: center"],[style*="text-align:center"]')]
+    .filter(el => !['TABLE','FIGURE','THEAD','TBODY','TR','TH','TD'].includes(el.tagName))
+    .forEach(el => { el.style.textAlign = 'left'; fixed++; });
+
+  syncCode(true);
+  setStatus('Auto-fix applied: ' + fixed + ' element(s) updated to standard', true);
+  setTimeout(() => runStandardsCheck(), 400);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   DYNAMICS / KB SAFE NORMALIZER
+   Makes output closer to the KB article rendering tested in Dynamics 365.
+═══════════════════════════════════════════════════ */
+function prepareForDynamics() {
+  if (!iframeDoc || !iframeDoc.body) {
+    setStatus('Render HTML first, then Prepare for Dynamics', false);
+    return;
+  }
+  if (currentMode !== 'edit') {
+    setMode('edit');
+  }
+  const doc = iframeDoc;
+  const body = doc.body;
+  let fixed = 0;
+
+  // Base typography
+  body.style.fontFamily = '"Segoe UI", "Helvetica Neue", sans-serif';
+  body.style.fontSize = '12pt';
+  body.style.color = '#201f1e';
+  body.style.lineHeight = '1.6';
+  body.style.textAlign = 'left';
+
+  // Title + section headings should remain semibold in Dynamics
+  [...body.querySelectorAll('h1')].forEach(el => {
+    el.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
+    el.style.fontWeight = '600';
+    el.style.color = '#243a5e';
+    if (!el.style.fontSize || el.style.fontSize === '14pt') el.style.fontSize = '18pt';
+    el.style.margin = el.style.margin || '0 0 12px';
+    fixed++;
+  });
+  [...body.querySelectorAll('h2,h3,h4')].forEach(el => {
+    el.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
+    el.style.fontWeight = '600';
+    el.style.fontSize = '14pt';
+    el.style.color = '#243a5e';
+    el.style.margin = el.style.margin || '16px 0 4px';
+    fixed++;
+  });
+
+  // Normalize paragraphs, lists and tables for left alignment and body sizing.
+  [...body.querySelectorAll('p, li, td, th, span')].forEach(el => {
+    if (el.closest('.collapsible_panel_head')) return;
+    if (!el.style.fontFamily || /aptos|calibri/i.test(el.style.fontFamily)) {
+      el.style.fontFamily = '"Segoe UI", "Helvetica Neue", sans-serif';
+      fixed++;
+    }
+    if (!el.style.fontSize || /11pt|13pt|14px|15px/i.test(el.style.fontSize)) {
+      el.style.fontSize = '12pt';
+      fixed++;
+    }
+    if (!el.style.color) el.style.color = '#201f1e';
+    if (!el.style.textAlign || el.style.textAlign === 'center') el.style.textAlign = 'left';
+  });
+
+  // Collapsible section normalization for Dynamics paste:
+  // use inline styles so borders survive outside this app.
+  [...body.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder')].forEach(section => {
+    section.style.display = 'block';
+    section.style.margin = '0 0 10px 0';
+    section.style.border = '1px solid #d6d6d6';
+    section.style.borderRadius = '4px';
+    section.style.background = '#ffffff';
+    section.style.overflow = 'hidden';
+    section.style.boxSizing = 'border-box';
+    fixed++;
+
+    const head = section.querySelector('div.collapsible_panel_head, span.collapsible_panel_head');
+    if (head) {
+      head.style.display = 'flex';
+      head.style.alignItems = 'flex-start';
+      head.style.gap = '10px';
+      head.style.padding = '12px 14px';
+      head.style.minHeight = '20px';
+      head.style.cursor = 'pointer';
+      head.style.background = '#ffffff';
+      head.style.borderBottom = '1px solid transparent';
+      head.style.margin = '0';
+      head.style.boxSizing = 'border-box';
+      fixed++;
+
+      let title = head.querySelector('.collapsible_panel_title');
+      if (title) {
+        title.style.flex = '1';
+        title.style.minWidth = '0';
+        title.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
+        title.style.fontWeight = '600';
+        title.style.color = '#243a5e';
+        title.style.fontSize = '14pt';
+        fixed++;
+      }
+
+      // Ensure a visible chevron exists even after paste.
+      let icon = head.querySelector('.collapsible_panel_icon');
+      if (!icon) {
+        icon = doc.createElement('span');
+        icon.className = 'collapsible_panel_icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.innerHTML = '&#9662;';
+        head.insertBefore(icon, head.firstChild);
+      }
+      icon.style.display = 'inline-flex';
+      icon.style.alignItems = 'center';
+      icon.style.justifyContent = 'center';
+      icon.style.width = '16px';
+      icon.style.height = '16px';
+      icon.style.flexShrink = '0';
+      icon.style.marginTop = '2px';
+      icon.style.color = '#605e5c';
+      icon.style.fontSize = '11px';
+      icon.style.lineHeight = '1';
+      fixed++;
+    }
+
+    const panelBody = section.querySelector('.collapsible_panel_body');
+    if (panelBody) {
+      panelBody.style.display = (panelBody.style.display === 'block') ? 'block' : 'none';
+      panelBody.style.padding = '8px 16px 16px 16px';
+      panelBody.style.margin = '0';
+      panelBody.style.borderTop = '1px solid #ececec';
+      panelBody.style.boxSizing = 'border-box';
+      panelBody.style.textAlign = 'left';
+      fixed++;
+      [...panelBody.querySelectorAll('*')].forEach(inner => {
+        if (inner.style && inner.style.marginLeft && parseFloat(inner.style.marginLeft) > 20) {
+          inner.style.marginLeft = '0';
+          fixed++;
+        }
+      });
+    }
+  });
+
+  // Generic fix for odd right indentation found in the last section during call testing.
+  [...body.querySelectorAll('section:last-of-type, .collapsible_panel_body:last-of-type, p:last-of-type, div:last-of-type')].forEach(el => {
+    if (el.style && el.style.marginLeft && parseFloat(el.style.marginLeft) > 20) {
+      el.style.marginLeft = '0';
+      fixed++;
+    }
+    if (el.style && el.style.paddingLeft && parseFloat(el.style.paddingLeft) > 24) {
+      el.style.paddingLeft = '16px';
+      fixed++;
+    }
+  });
+
+  // Add a small embedded helper script so collapsible sections keep working after export.
+  embedDynamicsToggleScript(doc);
+  syncCode(true);
+  updateStats(doc);
+  setStatus('Prepared for Dynamics / KB paste — ' + fixed + ' adjustment(s) applied', true);
+  if (document.getElementById('standardsPanel').classList.contains('open')) {
+    setTimeout(() => runStandardsCheck(), 250);
+  }
+}
+
+function embedDynamicsToggleScript(doc) {
+  if (!doc || !doc.body) return;
+  const existing = doc.getElementById('kb-dynamics-toggle-script');
+  if (existing) existing.remove();
+  const helper = doc.createElement('script');
+  helper.id = 'kb-dynamics-toggle-script';
+  helper.text = `(function(){
+    function wire(section){
+      var head = section.querySelector('div.collapsible_panel_head, span.collapsible_panel_head');
+      var body = section.querySelector('.collapsible_panel_body');
+      var icon = section.querySelector('.collapsible_panel_icon');
+      if(!head || !body) return;
+      if(!head.getAttribute('data-kb-wired')){
+        head.addEventListener('click', function(){
+          var isOpen = body.style.display === 'block';
+          body.style.display = isOpen ? 'none' : 'block';
+          if(icon){ icon.innerHTML = isOpen ? '&#9662;' : '&#9652;'; }
+          head.style.borderBottomColor = isOpen ? 'transparent' : '#ececec';
+        });
+        head.setAttribute('data-kb-wired','1');
+      }
+      if(icon){ icon.innerHTML = body.style.display === 'block' ? '&#9652;' : '&#9662;'; }
+      head.style.borderBottomColor = body.style.display === 'block' ? '#ececec' : 'transparent';
+    }
+    document.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder').forEach(wire);
+  })();`;
+  doc.body.appendChild(helper);
+}
+
+/* ─── KEYBOARD SHORTCUTS ─── */
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); renderHTML(); }
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') { e.preventDefault(); copyHTML(); }
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) { e.preventDefault(); prepareForDynamics(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'h') { e.preventDefault(); toggleFnR(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); toggleFnR(); }
+  if (e.key === 'Escape') { closeLinkPopup(); }
+});
+
+// Hover state for Find & Replace button
+const _fnrBtn = document.getElementById('btnFnR');
+_fnrBtn.addEventListener('mouseover', () => { if (!document.getElementById('fnrBar').classList.contains('open')) { _fnrBtn.style.borderColor = 'var(--accent)'; _fnrBtn.style.color = 'var(--accent)'; } });
+_fnrBtn.addEventListener('mouseout',  () => { if (!document.getElementById('fnrBar').classList.contains('open')) { _fnrBtn.style.borderColor = 'var(--border)'; _fnrBtn.style.color = 'var(--text)'; } });
+
+// Prevent toolbar clicks from stealing focus/selection from the iframe
+document.getElementById('mainToolbar').addEventListener('mousedown', function(e) {
+  if (currentMode === 'edit' && iframeDoc) {
+    e.preventDefault(); // keeps cursor position in iframe
+  }
+});
+
+// Also prevent Find & Replace bar from stealing focus in edit mode
+document.getElementById('fnrBar').addEventListener('mousedown', function(e) {
+  const tag = e.target.tagName;
+  // Allow focus on inputs/selects inside FnR bar
+  if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') {
+    if (currentMode === 'edit' && iframeDoc) e.preventDefault();
+  }
+});
+
+setStatus('Ready — paste HTML and press Ctrl+Enter to render', false);
+</script>
+</body>
+</html>
