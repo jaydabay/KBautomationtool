@@ -1283,10 +1283,6 @@
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export .html
       </button>
-      <button class="btn-outline" onclick="prepareForDynamics()" style="height:26px;font-size:11px;padding:0 10px;margin-left:4px;" data-tip="Normalize output for Dynamics / KB article paste">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/></svg>
-        Prepare for Dynamics
-      </button>
       <button class="btn-standards" id="btnStandards" onclick="toggleStandards()" style="margin-left:4px;" data-tip="Check article against KB standards">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         Standards Check
@@ -1478,25 +1474,34 @@ function isHtmlFragment(code) {
 
 function wrapFragment(fragment) {
   var css = [
-    'body { font-family: "Segoe UI","Helvetica Neue",sans-serif; font-size: 12pt; margin: 16px 20px; color: #201f1e; line-height: 1.5; }',
+    'body { font-family: "Segoe UI","Helvetica Neue",sans-serif; font-size: 12pt; margin: 16px 20px; color: #201f1e; line-height: 1.15; }',
     'a[href] { color: #0078d4; }',
+    /* ── List item alignment fixes (CKEditor data-wrapper margin bug) ── */
+    'ul, ol { margin: 0.25em 0; padding-left: 1.6em; }',
+    'li { display: list-item; padding: 0; margin: 0; list-style-position: outside; }',
+    'li > p { margin: 0 !important; padding: 0; display: block; }',
+    'li span[data-wrapper], li [data-wrapper] { margin: 0 !important; padding: 0; display: inline; }',
+    'li span[style*="list-style-position"] { list-style-position: unset !important; margin: 0 !important; display: inline !important; }',
+    /* ── Title alignment fix ── */
+    '.collapsible_panel_title, .collapsible_panel_title p, .collapsible_panel_title span { text-align: left !important; }',
     'a:not([href]) { color: inherit; cursor: text; }',
     'table { border-collapse: collapse; max-width: 100%; }',
     'td, th { padding: 4px 8px; border: 1px solid #bfbfbf; vertical-align: top; word-wrap: break-word; }',
     'img { max-width: 100%; height: auto; display: inline-block; }',
-    'ul, ol { margin: 0.4em 0; padding-left: 2em; }',
+    /* ul/ol rule moved above */
     'select, input { font-family: inherit; font-size: 11pt; padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px; }',
-    'section.collapsible_panel, section.collapsible_panel.collapsible_panel_noborder { display: block; margin: 0 0 6px 0; border: 1px solid #d6d6d6 !important; border-radius: 4px; background: #fff; overflow: hidden; }',
-    'div.collapsible_panel_head { cursor: pointer; user-select: none; display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; min-height: 20px; position: relative; }',
+    'section.collapsible_panel, section.collapsible_panel.collapsible_panel_noborder { display: block; margin: 8px 0; border: 1px solid #d6d6d6 !important; border-radius: 0; background: #fff; overflow: hidden; position: relative; }',
+    'section.collapsible_panel:last-of-type, section.collapsible_panel.collapsible_panel_noborder:last-of-type { margin-bottom: 8px; }',
+    'div.collapsible_panel_head { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 24px; padding: 4px 0; min-height: 14px; position: relative; }',
     'div.collapsible_panel_head:hover { background: #f5f5f5; }',
+    'div.collapsible_panel_head::before { content: ""; display: block; width: 8px; height: 8px; border-right: 2px solid #605e5c; border-bottom: 2px solid #605e5c; transform: rotate(-45deg); transition: transform .15s ease; flex-shrink: 0; margin-left: 4px; }',
+    'div.collapsible_panel_head.kb-open::before { transform: rotate(45deg); }',
     '.collapsible_panel_title { flex: 1; min-width: 0; }',
     '.collapsible_panel_title p { margin: 0; }',
-    '.collapsible_panel_body { display: none; padding: 6px 16px 16px 40px; border-top: 1px solid #ececec; }',
+    '.collapsible_panel_body { display: none; padding: 4px 0 8px 24px; }',
     '.collapsible_panel_body p:first-child { margin-top: 0; }',
     '.collapsible_panel_body p:last-child { margin-bottom: 0; }',
-    '.collapsible_panel_icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; flex-shrink: 0; margin-top: 3px; }',
-    '.collapsible_panel_icon::before { content: ""; display: block; width: 8px; height: 8px; border-right: 2px solid #605e5c; border-bottom: 2px solid #605e5c; transform: rotate(-45deg); transition: transform .15s ease; }',
-    'div.collapsible_panel_head.kb-open .collapsible_panel_icon::before { transform: rotate(45deg); margin-top: -4px; }',
+    '.collapsible_panel_icon { display: none !important; }',
     'span.collapsible_panel_head { display: block; padding: 0; cursor: default; }',
     'span.collapsible_panel_head:hover { background: transparent; }',
     '[style*=\"Semibold\" i] { font-weight: 600 !important; }',
@@ -1545,12 +1550,92 @@ function wrapFragment(fragment) {
 
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><style>' + css + '</style></head><body>' + fragment + scriptTag + '</body></html>';
 }
+
+
+function enhanceCollapsibles(htmlCode) {
+  var collapsibleCSS = [
+    'body { font-family: "Segoe UI","Helvetica Neue",sans-serif; font-size: 12pt; color: #201f1e; line-height: 1.15; }',
+    'section.collapsible_panel, section.collapsible_panel.collapsible_panel_noborder { display: block; margin: 8px 0; border: 1px solid #d6d6d6 !important; border-radius: 0; background: #fff; overflow: hidden; position: relative; }',
+    'section.collapsible_panel:last-of-type, section.collapsible_panel.collapsible_panel_noborder:last-of-type { margin-bottom: 8px; }',
+    'div.collapsible_panel_head { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 24px; padding: 4px 0; min-height: 14px; position: relative; }',
+    'div.collapsible_panel_head:hover { background: #f5f5f5; }',
+    'div.collapsible_panel_head::before { content: ""; display: block; width: 8px; height: 8px; border-right: 2px solid #605e5c; border-bottom: 2px solid #605e5c; transform: rotate(-45deg); transition: transform .15s ease; flex-shrink: 0; margin-left: 4px; }',
+    'div.collapsible_panel_head.kb-open::before { transform: rotate(45deg); }',
+    '.collapsible_panel_title, .collapsible_panel_title p, .collapsible_panel_title span { text-align: left !important; }',
+    '.collapsible_panel_title { flex: 1; min-width: 0; color: #243a5e; font-family: "Segoe UI Semibold", "Segoe UI", sans-serif; font-size: 14pt; font-weight: 600; }',
+    '.collapsible_panel_title p { margin: 0; }',
+    '.collapsible_panel_body { display: none; padding: 4px 0 8px 24px; font-family: "Segoe UI", "Helvetica Neue", sans-serif; font-size: 12pt; color: #000; }',
+    '.collapsible_panel_body p { margin: 0 0 6px 0; line-height: 1.5; }',
+    '.collapsible_panel_body p:first-child { margin-top: 0; }',
+    '.collapsible_panel_body p:last-child { margin-bottom: 0; }',
+    '.collapsible_panel_body ul, .collapsible_panel_body ol { margin: 4px 0; padding-left: 24px; }',
+    '.collapsible_panel_body li { display: list-item; padding: 0; margin: 0; list-style-position: outside; }',
+    '.collapsible_panel_icon { display: none !important; }',
+    'span.collapsible_panel_head { display: block; padding: 0; cursor: default; }',
+    'span.collapsible_panel_head:hover { background: transparent; }',
+    '[style*="Semibold" i] { font-weight: 600 !important; }'
+  ].join('\n  ');
+
+  var collapsibleScript =
+    '(function(){' +
+    'function sync(head){' +
+      'var body=head.nextElementSibling;' +
+      'if(!body||!body.classList||!body.classList.contains("collapsible_panel_body")) return;' +
+      'if(body.style.display==="block"){head.classList.add("kb-open");}else{head.classList.remove("kb-open");}' +
+    '}' +
+    'document.querySelectorAll("div.collapsible_panel_head").forEach(function(head){' +
+      'var body=head.nextElementSibling;' +
+      'if(body&&body.classList&&body.classList.contains("collapsible_panel_body")){' +
+        'if(!body.style.display){body.style.display="none";}' +
+        'sync(head);' +
+      '}' +
+      'head.onclick=function(){' +
+        'var body=this.nextElementSibling;' +
+        'if(!body||!body.classList||!body.classList.contains("collapsible_panel_body")) return;' +
+        'body.style.display=body.style.display==="block"?"none":"block";' +
+        'sync(this);' +
+      '};' +
+      'head.onkeypress=function(event){if(event.keyCode===13||event.keyCode===32){this.click();}};' +
+      'head.setAttribute("tabindex","0");' +
+    '});' +
+    'document.querySelectorAll(".collapsible_panel_title span, .collapsible_panel_title").forEach(function(el){' +
+      'el.style.setProperty("font-family", "\\"Segoe UI Semibold\\", \\"Segoe UI\\", sans-serif");' +
+      'el.style.setProperty("font-weight", "600");' +
+      'el.style.setProperty("color", "#243a5e");' +
+      'el.style.setProperty("font-size", "14pt");' +
+    '});' +
+    'document.querySelectorAll(".collapsible_panel_body, .collapsible_panel_body span, .collapsible_panel_body p, .collapsible_panel_body li").forEach(function(el){' +
+      'el.style.setProperty("font-family", "\\"Segoe UI\\", \\"Helvetica Neue\\", sans-serif");' +
+      'el.style.setProperty("font-size", "12pt");' +
+      'if(el.tagName.toLowerCase()!=="a"){el.style.setProperty("color", "#000");}' +
+    '});' +
+    '})();';
+
+  var styleTag = '<style id="kb-collapsible-enhancer">' + collapsibleCSS + '</style>';
+  var scriptTag = '<' + 'script id="kb-collapsible-init">' + collapsibleScript + '<' + '/script>';
+
+  if (/<\/head\s*>/i.test(htmlCode)) {
+    htmlCode = htmlCode.replace(/<\/head\s*>/i, styleTag + '</head>');
+  } else {
+    htmlCode = styleTag + htmlCode;
+  }
+
+  if (/<\/body\s*>/i.test(htmlCode)) {
+    htmlCode = htmlCode.replace(/<\/body\s*>/i, scriptTag + '</body>');
+  } else {
+    htmlCode = htmlCode + scriptTag;
+  }
+
+  return htmlCode;
+}
+
 function renderToFrame(htmlCode, callback) {
   const frame = document.getElementById('previewFrame');
   // Revoke any old blob URL
   if (frame._blobUrl) { try { URL.revokeObjectURL(frame._blobUrl); } catch(e){} frame._blobUrl = null; }
 
-  const fullHtml = isHtmlFragment(htmlCode) ? wrapFragment(htmlCode) : htmlCode;
+  let fullHtml = isHtmlFragment(htmlCode) ? wrapFragment(htmlCode) : htmlCode;
+  fullHtml = enhanceCollapsibles(fullHtml);
 
   // Use srcdoc for speed — no navigation overhead, scripts execute, same-origin
   frame.onload = function() {
@@ -1903,12 +1988,6 @@ function exportHTML() {
   a.click();
   setStatus('Exported as edited-page.html ✓', true);
 }
-
-function exportPreparedHTML() {
-  prepareForDynamics();
-  exportHTML();
-}
-
 
 function clearAll() {
   if (!confirm('Reset everything? This cannot be undone.')) return;
@@ -2657,34 +2736,6 @@ function runStandardsCheck() {
     }
   }
 
-
-  /* ═══ 10. COLLAPSIBLE SECTION VISUALS ═══ */
-  const collapsibleSections = [...body.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder')];
-  if (collapsibleSections.length > 0) {
-    const borderIssues = collapsibleSections.filter(sec => {
-      const borderTop = getComputedStyleProp(sec, 'borderTopWidth');
-      const borderStyle = getComputedStyleProp(sec, 'borderTopStyle');
-      return !(parseFloat(borderTop) >= 1 && borderStyle !== 'none');
-    });
-    if (borderIssues.length === 0) {
-      add('Structure', 'pass', 'Collapsible section visuals look standardized', 'Borders/containers detected on all collapsible sections ✓');
-    } else {
-      add('Structure', 'warn', borderIssues.length + ' collapsible section(s) may be missing borders', 'Use bordered containers so expanded sections match KB article styling.');
-    }
-    const titleIssues = collapsibleSections.filter(sec => {
-      const title = sec.querySelector('.collapsible_panel_title, .collapsible_panel_head p, .collapsible_panel_head span');
-      if (!title) return true;
-      const ff = getComputedStyleProp(title, 'fontFamily');
-      const fw = getComputedStyleProp(title, 'fontWeight');
-      return !(ff.toLowerCase().includes('segoe') && (parseInt(fw || '0', 10) >= 600 || /bold|semibold/i.test(fw)));
-    });
-    if (titleIssues.length === 0) {
-      add('Formatting', 'pass', 'Collapsible titles appear semibold', 'Section headers are styled for KB readability ✓');
-    } else {
-      add('Formatting', 'warn', titleIssues.length + ' collapsible title(s) may not be semibold', 'Section titles should remain semibold in Dynamics.');
-    }
-  }
-
   /* ═══ RENDER RESULTS ═══ */
   const cats = [...new Set(results.map(r => r.cat))];
   const passes = results.filter(r => r.status === 'pass').length;
@@ -2761,40 +2812,6 @@ function applyStandards() {
     fixed++;
   });
 
-  // Normalize collapsible panels for KB / Dynamics rendering
-  [...body.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder')].forEach(section => {
-    section.style.display = 'block';
-    section.style.margin = '0 0 10px 0';
-    section.style.border = '1px solid #d6d6d6';
-    section.style.borderRadius = '4px';
-    section.style.background = '#ffffff';
-    section.style.overflow = 'hidden';
-    const head = section.querySelector('div.collapsible_panel_head, span.collapsible_panel_head');
-    const panelBody = section.querySelector('.collapsible_panel_body');
-    if (head) {
-      head.style.display = 'flex';
-      head.style.alignItems = 'flex-start';
-      head.style.gap = '10px';
-      head.style.padding = '12px 14px';
-      head.style.cursor = 'pointer';
-      head.style.background = '#ffffff';
-      const title = head.querySelector('.collapsible_panel_title');
-      if (title) {
-        title.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
-        title.style.fontWeight = '600';
-        title.style.fontSize = '14pt';
-        title.style.color = '#243a5e';
-      }
-    }
-    if (panelBody) {
-      panelBody.style.padding = '8px 16px 16px 16px';
-      panelBody.style.margin = '0';
-      panelBody.style.borderTop = '1px solid #ececec';
-      panelBody.style.textAlign = 'left';
-    }
-    fixed++;
-  });
-  embedDynamicsToggleScript(doc);
   // Add missing alt text placeholder
   [...body.querySelectorAll('img:not([alt])')].forEach(img => {
     img.alt = '[Image description required]';
@@ -2815,196 +2832,10 @@ function applyStandards() {
   setTimeout(() => runStandardsCheck(), 400);
 }
 
-
-/* ═══════════════════════════════════════════════════
-   DYNAMICS / KB SAFE NORMALIZER
-   Makes output closer to the KB article rendering tested in Dynamics 365.
-═══════════════════════════════════════════════════ */
-function prepareForDynamics() {
-  if (!iframeDoc || !iframeDoc.body) {
-    setStatus('Render HTML first, then Prepare for Dynamics', false);
-    return;
-  }
-  if (currentMode !== 'edit') {
-    setMode('edit');
-  }
-  const doc = iframeDoc;
-  const body = doc.body;
-  let fixed = 0;
-
-  // Base typography
-  body.style.fontFamily = '"Segoe UI", "Helvetica Neue", sans-serif';
-  body.style.fontSize = '12pt';
-  body.style.color = '#201f1e';
-  body.style.lineHeight = '1.6';
-  body.style.textAlign = 'left';
-
-  // Title + section headings should remain semibold in Dynamics
-  [...body.querySelectorAll('h1')].forEach(el => {
-    el.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
-    el.style.fontWeight = '600';
-    el.style.color = '#243a5e';
-    if (!el.style.fontSize || el.style.fontSize === '14pt') el.style.fontSize = '18pt';
-    el.style.margin = el.style.margin || '0 0 12px';
-    fixed++;
-  });
-  [...body.querySelectorAll('h2,h3,h4')].forEach(el => {
-    el.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
-    el.style.fontWeight = '600';
-    el.style.fontSize = '14pt';
-    el.style.color = '#243a5e';
-    el.style.margin = el.style.margin || '16px 0 4px';
-    fixed++;
-  });
-
-  // Normalize paragraphs, lists and tables for left alignment and body sizing.
-  [...body.querySelectorAll('p, li, td, th, span')].forEach(el => {
-    if (el.closest('.collapsible_panel_head')) return;
-    if (!el.style.fontFamily || /aptos|calibri/i.test(el.style.fontFamily)) {
-      el.style.fontFamily = '"Segoe UI", "Helvetica Neue", sans-serif';
-      fixed++;
-    }
-    if (!el.style.fontSize || /11pt|13pt|14px|15px/i.test(el.style.fontSize)) {
-      el.style.fontSize = '12pt';
-      fixed++;
-    }
-    if (!el.style.color) el.style.color = '#201f1e';
-    if (!el.style.textAlign || el.style.textAlign === 'center') el.style.textAlign = 'left';
-  });
-
-  // Collapsible section normalization for Dynamics paste:
-  // use inline styles so borders survive outside this app.
-  [...body.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder')].forEach(section => {
-    section.style.display = 'block';
-    section.style.margin = '0 0 10px 0';
-    section.style.border = '1px solid #d6d6d6';
-    section.style.borderRadius = '4px';
-    section.style.background = '#ffffff';
-    section.style.overflow = 'hidden';
-    section.style.boxSizing = 'border-box';
-    fixed++;
-
-    const head = section.querySelector('div.collapsible_panel_head, span.collapsible_panel_head');
-    if (head) {
-      head.style.display = 'flex';
-      head.style.alignItems = 'flex-start';
-      head.style.gap = '10px';
-      head.style.padding = '12px 14px';
-      head.style.minHeight = '20px';
-      head.style.cursor = 'pointer';
-      head.style.background = '#ffffff';
-      head.style.borderBottom = '1px solid transparent';
-      head.style.margin = '0';
-      head.style.boxSizing = 'border-box';
-      fixed++;
-
-      let title = head.querySelector('.collapsible_panel_title');
-      if (title) {
-        title.style.flex = '1';
-        title.style.minWidth = '0';
-        title.style.fontFamily = '"Segoe UI Semibold", "Segoe UI", sans-serif';
-        title.style.fontWeight = '600';
-        title.style.color = '#243a5e';
-        title.style.fontSize = '14pt';
-        fixed++;
-      }
-
-      // Ensure a visible chevron exists even after paste.
-      let icon = head.querySelector('.collapsible_panel_icon');
-      if (!icon) {
-        icon = doc.createElement('span');
-        icon.className = 'collapsible_panel_icon';
-        icon.setAttribute('aria-hidden', 'true');
-        icon.innerHTML = '&#9662;';
-        head.insertBefore(icon, head.firstChild);
-      }
-      icon.style.display = 'inline-flex';
-      icon.style.alignItems = 'center';
-      icon.style.justifyContent = 'center';
-      icon.style.width = '16px';
-      icon.style.height = '16px';
-      icon.style.flexShrink = '0';
-      icon.style.marginTop = '2px';
-      icon.style.color = '#605e5c';
-      icon.style.fontSize = '11px';
-      icon.style.lineHeight = '1';
-      fixed++;
-    }
-
-    const panelBody = section.querySelector('.collapsible_panel_body');
-    if (panelBody) {
-      panelBody.style.display = (panelBody.style.display === 'block') ? 'block' : 'none';
-      panelBody.style.padding = '8px 16px 16px 16px';
-      panelBody.style.margin = '0';
-      panelBody.style.borderTop = '1px solid #ececec';
-      panelBody.style.boxSizing = 'border-box';
-      panelBody.style.textAlign = 'left';
-      fixed++;
-      [...panelBody.querySelectorAll('*')].forEach(inner => {
-        if (inner.style && inner.style.marginLeft && parseFloat(inner.style.marginLeft) > 20) {
-          inner.style.marginLeft = '0';
-          fixed++;
-        }
-      });
-    }
-  });
-
-  // Generic fix for odd right indentation found in the last section during call testing.
-  [...body.querySelectorAll('section:last-of-type, .collapsible_panel_body:last-of-type, p:last-of-type, div:last-of-type')].forEach(el => {
-    if (el.style && el.style.marginLeft && parseFloat(el.style.marginLeft) > 20) {
-      el.style.marginLeft = '0';
-      fixed++;
-    }
-    if (el.style && el.style.paddingLeft && parseFloat(el.style.paddingLeft) > 24) {
-      el.style.paddingLeft = '16px';
-      fixed++;
-    }
-  });
-
-  // Add a small embedded helper script so collapsible sections keep working after export.
-  embedDynamicsToggleScript(doc);
-  syncCode(true);
-  updateStats(doc);
-  setStatus('Prepared for Dynamics / KB paste — ' + fixed + ' adjustment(s) applied', true);
-  if (document.getElementById('standardsPanel').classList.contains('open')) {
-    setTimeout(() => runStandardsCheck(), 250);
-  }
-}
-
-function embedDynamicsToggleScript(doc) {
-  if (!doc || !doc.body) return;
-  const existing = doc.getElementById('kb-dynamics-toggle-script');
-  if (existing) existing.remove();
-  const helper = doc.createElement('script');
-  helper.id = 'kb-dynamics-toggle-script';
-  helper.text = `(function(){
-    function wire(section){
-      var head = section.querySelector('div.collapsible_panel_head, span.collapsible_panel_head');
-      var body = section.querySelector('.collapsible_panel_body');
-      var icon = section.querySelector('.collapsible_panel_icon');
-      if(!head || !body) return;
-      if(!head.getAttribute('data-kb-wired')){
-        head.addEventListener('click', function(){
-          var isOpen = body.style.display === 'block';
-          body.style.display = isOpen ? 'none' : 'block';
-          if(icon){ icon.innerHTML = isOpen ? '&#9662;' : '&#9652;'; }
-          head.style.borderBottomColor = isOpen ? 'transparent' : '#ececec';
-        });
-        head.setAttribute('data-kb-wired','1');
-      }
-      if(icon){ icon.innerHTML = body.style.display === 'block' ? '&#9652;' : '&#9662;'; }
-      head.style.borderBottomColor = body.style.display === 'block' ? '#ececec' : 'transparent';
-    }
-    document.querySelectorAll('section.collapsible_panel, section.collapsible_panel_noborder').forEach(wire);
-  })();`;
-  doc.body.appendChild(helper);
-}
-
 /* ─── KEYBOARD SHORTCUTS ─── */
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); renderHTML(); }
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') { e.preventDefault(); copyHTML(); }
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) { e.preventDefault(); prepareForDynamics(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'h') { e.preventDefault(); toggleFnR(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); toggleFnR(); }
   if (e.key === 'Escape') { closeLinkPopup(); }
