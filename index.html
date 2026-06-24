@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>KB Automation</title>
+<!-- Fix: collapsibles remain collapsed on render; KB/MAS issue clicks expand only the target section. -->
 <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
   :root {
@@ -206,6 +207,32 @@
     transition: background .1s, border-color .1s;
   }
   .tb-color-wrap:hover .tb-color-preview { background: var(--accent-light); border-color: #c7e0f4; color: var(--accent); }
+
+
+  /* ── Hex color inputs for text/highlight color toolbar ── */
+  .tb-color-combo {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .tb-hex-input {
+    width: 74px;
+    height: 28px;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    padding: 0 6px;
+    outline: none;
+    text-transform: lowercase;
+    flex-shrink: 0;
+  }
+  .tb-hex-input:hover { border-color: var(--accent); }
+  .tb-hex-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,120,212,0.15); }
+  .tb-hex-input.invalid { border-color: var(--warn); box-shadow: 0 0 0 2px rgba(216,59,1,0.12); }
 
   /* ── Workspace ── */
   .workspace {
@@ -488,12 +515,13 @@
   .link-popup input:focus, .link-popup select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(0,120,212,0.15); }
   .link-popup-actions { display: flex; gap: 6px; margin-top: 6px; }
 
-  /* Tooltip — shows BELOW to avoid ribbon overflow-y:hidden clipping */
+  /* Tooltip — shows ABOVE toolbar buttons for better visibility */
   [data-tip] { position: relative; }
   [data-tip]::after {
     content: attr(data-tip);
     position: absolute;
-    top: calc(100% + 7px);
+    bottom: calc(100% + 7px);
+    top: auto;
     left: 50%;
     transform: translateX(-50%);
     background: #323130;
@@ -506,26 +534,28 @@
     pointer-events: none;
     opacity: 0;
     transition: opacity .18s .3s;
-    z-index: 9999;
+    z-index: 999999;
     box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     letter-spacing: 0.1px;
   }
-  /* Triangle pointing UP */
+  /* Triangle pointing DOWN toward the toolbar button */
   [data-tip]::before {
     content: '';
     position: absolute;
-    top: calc(100% + 2px);
+    bottom: calc(100% - 1px);
+    top: auto;
     left: 50%;
     transform: translateX(-50%);
     border: 4px solid transparent;
-    border-bottom-color: #323130;
+    border-top-color: #323130;
+    border-bottom-color: transparent;
     pointer-events: none;
     opacity: 0;
     transition: opacity .18s .3s;
-    z-index: 9999;
+    z-index: 999999;
   }
   [data-tip]:hover::after,
-  [data-tip]:hover::before { opacity: 1; }
+  [data-tip]:hover::before { opacity: 0; }
 
   /* Mode badge */
   .mode-badge {
@@ -670,8 +700,9 @@
     opacity: 0.35;
     pointer-events: none;
   }
-  /* Find & Replace stays active in preview mode */
-  .ribbon.preview-mode #btnFnR {
+  /* Find & Replace and Add Collapsible stay active in preview mode */
+  .ribbon.preview-mode #btnFnR,
+  .ribbon.preview-mode #btnAddCollapsible {
     opacity: 1 !important;
     pointer-events: auto !important;
   }
@@ -1004,6 +1035,677 @@
   }
   .btn-standards:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
   .btn-standards.active { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+
+  /* ── Floating tooltip appended to <body>
+
+<aside class="huly-sidebar" aria-label="KB Automation navigation">
+  <div class="huly-mark">KB</div>
+  <nav class="huly-nav">
+    <button class="active" type="button" data-tip="Editor" onclick="document.getElementById('codeInput')?.focus()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+    </button>
+    <button type="button" data-tip="KB Standards" onclick="toggleStandards && toggleStandards()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </button>
+    <button type="button" data-tip="MAS Accessibility" onclick="toggleAccessibility && toggleAccessibility()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="4" r="2"/><path d="M10 8h4l1 12h-2l-.5-6h-1l-.5 6H9l1-12z"/><path d="M5 10h14"/></svg>
+    </button>
+    <button type="button" data-tip="View HTML" onclick="viewHTML && viewHTML()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    </button>
+  </nav>
+  <div class="huly-sidebar-spacer"></div>
+  <div class="huly-pill">Quality</div>
+</aside>
+ to avoid toolbar clipping ── */
+  .floating-tooltip {
+    position: fixed;
+    z-index: 2147483647;
+    background: #323130;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.3;
+    white-space: nowrap;
+    padding: 5px 8px;
+    border-radius: 3px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, 0);
+    transition: opacity .12s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  .floating-tooltip.show { opacity: 1; }
+  .floating-tooltip::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+  }
+  .floating-tooltip.above::after {
+    top: 100%;
+    border-top-color: #323130;
+  }
+  .floating-tooltip.below::after {
+    bottom: 100%;
+    border-bottom-color: #323130;
+  }
+
+  /* Standards click-to-highlight helpers */
+  .std-item.clickable { cursor: pointer; }
+  .std-item.clickable:hover { filter: brightness(0.98); box-shadow: 0 0 0 1px rgba(0,120,212,0.18); }
+  #codeInput.std-source-flash { outline: 2px solid #0078d4; outline-offset: -2px; background: #fffef4; }
+
+
+  /* ── Image Alt Text Floating Toolbar ── */
+  .image-alt-toolbar {
+    position: fixed;
+    z-index: 2147483646;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid #c8c6c4;
+    border-top: 3px solid var(--accent);
+    border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    padding: 8px 10px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    max-width: min(640px, calc(100vw - 24px));
+  }
+  .image-alt-toolbar.open { display: flex; }
+  .image-alt-toolbar label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .image-alt-toolbar input[type="text"] {
+    width: 340px;
+    max-width: 42vw;
+    height: 30px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 8px;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+  }
+  .image-alt-toolbar input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(0,120,212,0.15);
+  }
+  .image-alt-toolbar .btn-alt-save,
+  .image-alt-toolbar .btn-alt-decorative,
+  .image-alt-toolbar .btn-alt-close {
+    height: 30px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0 9px;
+    white-space: nowrap;
+  }
+  .image-alt-toolbar .btn-alt-save {
+    background: var(--accent);
+    border-color: var(--accent-hover);
+    color: #fff;
+    font-weight: 600;
+  }
+  .image-alt-toolbar .btn-alt-save:hover { background: var(--accent-hover); }
+  .image-alt-toolbar .btn-alt-decorative:hover,
+  .image-alt-toolbar .btn-alt-close:hover { background: var(--surface3); color: var(--text); }
+
+
+
+/* ══════════════════════════════════════
+   HULY-INSPIRED UI REFRESH
+   Visual-only enhancement layer; article content remains Segoe UI.
+══════════════════════════════════════ */
+:root {
+  --bg: #0b1020;
+  --surface: #ffffff;
+  --surface2: #f6f8fc;
+  --surface3: #eef2f8;
+  --border: rgba(15, 23, 42, .10);
+  --border-bright: rgba(15, 23, 42, .18);
+  --accent: #4f8cff;
+  --accent-hover: #3b78ee;
+  --accent-light: #eaf2ff;
+  --accent2: #7c5cff;
+  --text: #111827;
+  --text-muted: #5b6475;
+  --text-dim: #94a3b8;
+  --success: #16a34a;
+  --success-bg: #ecfdf3;
+  --warn: #d97706;
+  --warn-bg: #fff7ed;
+  --radius: 10px;
+  --shadow: 0 10px 30px rgba(15,23,42,.08);
+  --shadow-lg: 0 24px 70px rgba(15,23,42,.24);
+}
+body {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(79,140,255,.22), transparent 28%),
+    radial-gradient(circle at 86% 4%, rgba(124,92,255,.20), transparent 30%),
+    linear-gradient(135deg,#0a0f1f 0%,#111827 55%,#0b1020 100%);
+  font-family: Inter, 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.huly-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 72px;
+  z-index: 20000;
+  background: rgba(9,14,29,.78);
+  border-right: 1px solid rgba(255,255,255,.10);
+  backdrop-filter: blur(22px) saturate(160%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 10px;
+  gap: 10px;
+}
+.huly-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: -.5px;
+  background: linear-gradient(135deg,#4f8cff,#7c5cff);
+  box-shadow: 0 12px 28px rgba(79,140,255,.32);
+}
+.huly-nav { display:flex; flex-direction:column; gap:8px; margin-top:10px; width:100%; align-items:center; }
+.huly-nav button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: rgba(255,255,255,.62);
+  cursor: pointer;
+  display:grid;
+  place-items:center;
+  transition: all .15s ease;
+}
+.huly-nav button:hover,
+.huly-nav button.active {
+  color: #fff;
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.12);
+  transform: translateY(-1px);
+}
+.huly-sidebar-spacer { flex:1; }
+.huly-pill {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  color: rgba(255,255,255,.45);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+header,
+.ribbon,
+.workspace,
+.statusbar { margin-left: 72px; }
+header {
+  height: 52px;
+  background: rgba(11,16,32,.72);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: none;
+}
+.logo { font-size: 15px; letter-spacing: -.02em; }
+.logo-icon { background: rgba(79,140,255,.24); border: 1px solid rgba(255,255,255,.12); border-radius: 9px; }
+.btn-header,
+.btn-header-primary {
+  border-radius: 10px;
+  height: 34px;
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.btn-header:hover,
+.btn-header-primary:hover { transform: translateY(-1px); }
+.ribbon {
+  height: 48px;
+  background: rgba(255,255,255,.82);
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 1px 0 rgba(255,255,255,.70) inset, 0 12px 28px rgba(15,23,42,.06);
+  padding: 0 12px;
+}
+.tb-btn,
+.tb-select,
+.tb-number,
+.tb-hex-input,
+.btn-outline,
+.btn-copy,
+.btn-standards,
+.mode-toggle-wrap,
+.input-mode-toggle {
+  border-radius: 10px !important;
+}
+.tb-btn:hover,
+.btn-outline:hover,
+.btn-standards:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15,23,42,.08);
+}
+.tb-btn.active,
+.mode-toggle-btn.active,
+.imt-btn.active {
+  background: #fff !important;
+  color: var(--accent) !important;
+  box-shadow: 0 8px 22px rgba(79,140,255,.14) !important;
+}
+.tb-sep { background: rgba(15,23,42,.10); margin: 0 8px; }
+.workspace {
+  margin-top: 12px;
+  margin-right: 12px;
+  margin-bottom: 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 30px 90px rgba(0,0,0,.25);
+  overflow: hidden;
+}
+.panel-left {
+  background: rgba(248,250,252,.94);
+  border-right: 1px solid rgba(15,23,42,.10);
+  box-shadow: 10px 0 30px rgba(15,23,42,.05);
+}
+.panel-header,
+.canvas-topbar {
+  height: 40px;
+  background: rgba(255,255,255,.78);
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  backdrop-filter: blur(12px);
+}
+.panel-header-title,
+.canvas-topbar-title {
+  color: #475569;
+  font-weight: 700;
+}
+#codeInput,
+#textInput {
+  background: #fbfdff;
+  color: #0f172a;
+}
+.panel-actions { background: rgba(255,255,255,.75); border-top: 1px solid rgba(15,23,42,.08); }
+.panel-right { background: linear-gradient(180deg,rgba(248,250,252,.90),rgba(241,245,249,.92)); }
+.canvas-wrap {
+  padding: 22px;
+  background:
+    radial-gradient(circle at 40% 0%, rgba(79,140,255,.08), transparent 35%),
+    linear-gradient(180deg, #f8fafc, #eef2f7);
+}
+.canvas-inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(15,23,42,.14), 0 1px 0 rgba(255,255,255,.9) inset;
+}
+.canvas-inner.edit-mode {
+  border-color: rgba(79,140,255,.52);
+  box-shadow: 0 0 0 3px rgba(79,140,255,.12), 0 24px 70px rgba(15,23,42,.14);
+}
+.canvas-inner.preview-mode {
+  border-color: rgba(22,163,74,.36);
+  box-shadow: 0 0 0 3px rgba(22,163,74,.10), 0 24px 70px rgba(15,23,42,.14);
+}
+.standards-panel {
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: 360px;
+  border: 1px solid rgba(15,23,42,.10);
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 24px 80px rgba(15,23,42,.22);
+}
+.standards-panel-header {
+  height: 46px;
+  background: rgba(255,255,255,.76);
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  font-size: 13px;
+}
+.standards-panel-body { gap: 8px; padding: 14px; }
+.std-section-label { color:#64748b; padding-top:10px; }
+.std-item {
+  border-radius: 14px;
+  padding: 10px 12px;
+  border-left-width: 4px !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.8) inset;
+}
+.std-item.pass { background:#f6fef8; border-color:#bbf7d0; border-left-color:#16a34a !important; }
+.std-item.info { background:#f7fbff; border-color:#bfdbfe; border-left-color:#4f8cff !important; }
+.std-item.warn { background:#fffaf0; border-color:#fed7aa; border-left-color:#d97706 !important; }
+.std-item.fail { background:#fff7f7; border-color:#fecaca; border-left-color:#ef4444 !important; }
+.std-summary { background: rgba(248,250,252,.9); border-top: 1px solid rgba(15,23,42,.08); }
+.btn-apply-standards,
+.btn-primary {
+  border-radius: 12px;
+  background: linear-gradient(135deg,#4f8cff,#3b78ee);
+  border: none;
+  box-shadow: 0 10px 22px rgba(79,140,255,.22);
+}
+.btn-copy {
+  background: #effdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+.statusbar {
+  background: rgba(11,16,32,.76);
+  border-top: 1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(18px);
+}
+.link-popup,
+.image-alt-toolbar,
+.floating-tooltip {
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(15,23,42,.24);
+}
+.empty-icon { border-radius: 16px; background: linear-gradient(135deg,#eaf2ff,#f2eaff); }
+@media (max-width: 980px) {
+  .huly-sidebar { width: 56px; }
+  header,.ribbon,.workspace,.statusbar { margin-left: 56px; }
+  .standards-panel { width: 320px; }
+}
+
+
+
+/* ══════════════════════════════════════
+   UX IMPROVEMENTS: Quality Center + Command Palette
+══════════════════════════════════════ */
+.ux-workflow-bar{
+  height:44px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(248,250,252,.78));
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(15,23,42,.08);
+  box-shadow:0 1px 0 rgba(255,255,255,.75) inset;
+  flex-shrink:0;
+  z-index:9;
+}
+
+.ux-quality-bar{
+  height:38px;
+  justify-content:flex-end;
+}
+
+.ux-stepper{display:flex;align-items:center;gap:6px;}
+.ux-step{
+  display:flex;align-items:center;gap:7px;
+  height:28px;padding:0 12px;
+  border:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.72);
+  border-radius:999px;
+  font:600 12px 'Segoe UI',sans-serif;
+  color:#334155;
+  cursor:pointer;
+  transition:.16s ease;
+}
+.ux-step:hover{border-color:#8bb7ff;background:#f5f9ff;color:#0f4b8f;transform:translateY(-1px)}
+.ux-step.active{background:#0f172a;color:#fff;border-color:#0f172a;box-shadow:0 8px 22px rgba(15,23,42,.16)}
+.ux-step-num{width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(15,23,42,.08);font-size:10px;}
+.ux-step.active .ux-step-num{background:rgba(255,255,255,.18)}
+.ux-workflow-spacer{flex:1}
+.ux-mini-stat{display:flex;align-items:center;gap:6px;color:#64748b;font:500 12px 'Segoe UI',sans-serif;}
+.ux-score-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.12)}
+.ux-score-dot.good{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.14)}
+.ux-score-dot.warn{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.14)}
+.ux-score-dot.bad{background:#ef4444;box-shadow:0 0 0 3px rgba(239,68,68,.14)}
+.ux-ghost-btn{
+  height:28px;padding:0 10px;border-radius:8px;border:1px solid rgba(15,23,42,.10);
+  background:rgba(255,255,255,.72);color:#334155;font:600 12px 'Segoe UI',sans-serif;cursor:pointer;
+}
+.ux-ghost-btn:hover{border-color:#8bb7ff;color:#0f4b8f;background:#f5f9ff;}
+
+.quality-center-panel{
+  position:absolute;top:54px;right:18px;width:390px;max-height:calc(100vh - 120px);
+  display:none;flex-direction:column;z-index:45;
+  background:rgba(255,255,255,.96);backdrop-filter:blur(22px);
+  border:1px solid rgba(15,23,42,.10);border-radius:18px;
+  box-shadow:0 24px 70px rgba(15,23,42,.20);
+  overflow:hidden;
+}
+.quality-center-panel.open{display:flex;}
+.qc-head{padding:16px 16px 12px;border-bottom:1px solid rgba(15,23,42,.08);display:flex;align-items:center;gap:10px;}
+.qc-icon{width:30px;height:30px;border-radius:10px;background:#eaf3ff;color:#0078d4;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.qc-title{font:700 14px 'Segoe UI',sans-serif;color:#0f172a;}
+.qc-sub{font:500 11px 'Segoe UI',sans-serif;color:#64748b;margin-top:2px;}
+.qc-close{margin-left:auto;border:0;background:transparent;color:#64748b;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:18px;}
+.qc-close:hover{background:#f1f5f9;color:#0f172a;}
+.qc-score-wrap{padding:14px 16px;border-bottom:1px solid rgba(15,23,42,.08);}
+.qc-score-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.qc-score-label{font:700 12px 'Segoe UI',sans-serif;color:#334155;}
+.qc-score-value{font:800 22px 'Segoe UI',sans-serif;color:#0f172a;}
+.qc-progress{height:8px;border-radius:999px;background:#e2e8f0;overflow:hidden;}
+.qc-progress-fill{height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#0078d4,#22c55e);transition:.25s ease;}
+.qc-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;}
+.qc-metric{border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:8px;background:#f8fafc;text-align:center;}
+.qc-metric b{display:block;font-size:16px;color:#0f172a;}
+.qc-metric span{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.35px;}
+.qc-actions{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid rgba(15,23,42,.08);}
+.qc-action{flex:1;height:30px;border-radius:9px;border:1px solid rgba(0,120,212,.24);background:#f0f7ff;color:#075ea8;font:700 11px 'Segoe UI',sans-serif;cursor:pointer;}
+.qc-action:hover{background:#e4f1ff;}
+.qc-body{overflow:auto;padding:12px 12px 16px;}
+.qc-empty{padding:24px;text-align:center;color:#64748b;font-size:12px;line-height:1.5;}
+.qc-section-title{font:800 10px 'Segoe UI',sans-serif;color:#94a3b8;text-transform:uppercase;letter-spacing:.7px;margin:10px 4px 6px;}
+.qc-issue{display:flex;gap:10px;border:1px solid rgba(15,23,42,.08);border-left-width:4px;border-radius:13px;padding:10px;margin-bottom:8px;background:#fff;cursor:pointer;transition:.14s ease;}
+.qc-issue:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(15,23,42,.08);}
+.qc-issue.fail{border-left-color:#ef4444}.qc-issue.warn{border-left-color:#f59e0b}.qc-issue.info{border-left-color:#3b82f6}.qc-issue.pass{border-left-color:#22c55e}
+.qc-issue-icon{width:20px;height:20px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;background:#f1f5f9;flex-shrink:0;}
+.qc-issue-text strong{display:block;font-size:12px;color:#0f172a;margin-bottom:2px;}
+.qc-issue-text span{display:block;font-size:11px;color:#64748b;line-height:1.35;}
+.qc-nav{display:flex;gap:8px;padding:10px 16px;border-top:1px solid rgba(15,23,42,.08);background:#f8fafc;}
+.qc-nav button{height:30px;border-radius:9px;border:1px solid rgba(15,23,42,.10);background:#fff;color:#334155;font:700 11px 'Segoe UI',sans-serif;cursor:pointer;padding:0 10px;}
+.qc-nav button:hover{border-color:#8bb7ff;color:#075ea8;}
+.qc-nav .primary{margin-left:auto;background:#0078d4;border-color:#0078d4;color:white;}
+
+.command-palette-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.30);backdrop-filter:blur(3px);display:none;z-index:2147483600;}
+.command-palette-backdrop.open{display:block;}
+.command-palette{position:fixed;top:90px;left:50%;transform:translateX(-50%);width:min(640px,calc(100vw - 32px));background:rgba(255,255,255,.98);border:1px solid rgba(15,23,42,.10);border-radius:18px;box-shadow:0 28px 90px rgba(15,23,42,.25);overflow:hidden;}
+.cmd-input{width:100%;height:52px;border:0;border-bottom:1px solid rgba(15,23,42,.08);outline:none;padding:0 18px;font:600 15px 'Segoe UI',sans-serif;color:#0f172a;background:#fff;}
+.cmd-list{max-height:360px;overflow:auto;padding:8px;}
+.cmd-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;color:#334155;}
+.cmd-item:hover,.cmd-item.active{background:#eef6ff;color:#075ea8;}
+.cmd-kbd{margin-left:auto;font-size:10px;color:#94a3b8;border:1px solid #e2e8f0;border-radius:6px;padding:2px 6px;background:#fff;}
+.cmd-ico{width:26px;height:26px;border-radius:9px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;}
+
+.floating-selection-toolbar{position:fixed;display:none;align-items:center;gap:3px;z-index:2147483500;background:#111827;color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:5px;box-shadow:0 18px 45px rgba(15,23,42,.30);}
+.floating-selection-toolbar.open{display:flex;}
+.fst-btn{height:28px;min-width:28px;border:0;border-radius:8px;background:transparent;color:#fff;font:700 12px 'Segoe UI',sans-serif;cursor:pointer;padding:0 8px;}
+.fst-btn:hover{background:rgba(255,255,255,.12);}
+.fst-sep{width:1px;height:18px;background:rgba(255,255,255,.18);margin:0 3px;}
+
+
+
+/* ══════════════════════════════════════
+   Context-sensitive guideline help for KB/MAS checker items
+══════════════════════════════════════ */
+.std-text { min-width: 0; }
+.std-help-btn {
+  margin-left: auto;
+  align-self: flex-start;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: rgba(255,255,255,.72);
+  color: #3b82f6;
+  font: 800 12px 'Segoe UI', sans-serif;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: .14s ease;
+}
+.std-help-btn:hover {
+  background: #eaf3ff;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+.context-help-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483400;
+  background: rgba(15,23,42,.24);
+  backdrop-filter: blur(2px);
+  display: none;
+}
+.context-help-backdrop.open { display: block; }
+.context-help-card {
+  position: fixed;
+  right: 24px;
+  top: 86px;
+  width: min(430px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,.98);
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 18px;
+  box-shadow: 0 26px 90px rgba(15,23,42,.28);
+  font-family: 'Segoe UI', sans-serif;
+}
+.context-help-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(15,23,42,.08);
+  background: linear-gradient(180deg,#ffffff,#f8fafc);
+}
+.context-help-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #eaf3ff;
+  color: #2563eb;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.context-help-title { font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 1px; }
+.context-help-sub { font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.35; }
+.context-help-close {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 18px;
+}
+.context-help-close:hover { background: #f1f5f9; color:#0f172a; }
+.context-help-body { padding: 14px 16px 16px; overflow: auto; }
+.context-help-section { margin-bottom: 14px; }
+.context-help-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+.context-help-section p,
+.context-help-section li {
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.5;
+}
+.context-help-section ul { margin: 6px 0 0 18px; padding: 0; }
+.context-help-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(15,23,42,.08);
+  background: #f8fafc;
+}
+.context-help-actions button {
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,.12);
+  background: #fff;
+  color: #334155;
+  font: 700 12px 'Segoe UI', sans-serif;
+  padding: 0 10px;
+  cursor: pointer;
+}
+.context-help-actions .primary { background:#0078d4; color:white; border-color:#0078d4; margin-left:auto; }
+.context-help-actions button:hover { filter: brightness(.98); transform: translateY(-1px); }
+
+
+
+/* ══════════════════════════════════════
+   FULL-WIDTH FUNCTIONAL UI FIX
+   Keeps the Huly/glass styling but removes the unused left rail spacing.
+══════════════════════════════════════ */
+.huly-sidebar { display: none !important; }
+header,
+.ribbon,
+.workspace,
+.statusbar,
+.ux-workflow-bar {
+  margin-left: 0 !important;
+}
+.workspace {
+  margin-right: 12px !important;
+  margin-left: 12px !important;
+  width: auto !important;
+}
+.header-quality-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.10);
+  color: rgba(255,255,255,.88);
+  font: 700 12px 'Segoe UI', sans-serif;
+  white-space: nowrap;
+}
+.header-quality-badge .ux-score-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148,163,184,.18);
+}
+.header-quality-badge .ux-score-dot.good { background:#22c55e; box-shadow:0 0 0 3px rgba(34,197,94,.18); }
+.header-quality-badge .ux-score-dot.warn { background:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,.18); }
+.header-quality-badge .ux-score-dot.bad { background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,.18); }
+.ux-quality-bar {
+  justify-content: flex-end !important;
+}
+@media (max-width: 980px) {
+  header,.ribbon,.workspace,.statusbar,.ux-workflow-bar { margin-left: 0 !important; }
+  .workspace { margin-left: 8px !important; margin-right: 8px !important; }
+  .header-quality-badge { display:none; }
+}
+
 </style>
 </head>
 <body>
@@ -1017,16 +1719,21 @@
     KB Automation
   </div>
   <div class="header-spacer"></div>
+  <div class="header-quality-badge" id="uxQualityStat"><span class="ux-score-dot"></span><span>Quality not checked</span></div>
   <button class="btn-header" onclick="clearAll()">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
     Reset
   </button>
-  <button class="btn-header-primary" id="btnHeaderCopy" onclick="headerCopyHTML()">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    <span id="btnHeaderCopyLabel">Copy HTML Code</span>
-  </button>
 </header>
 
+
+
+<!-- ══ QUALITY ACTION BAR ══ -->
+<div class="ux-workflow-bar ux-quality-bar" id="uxWorkflowBar">
+  <div class="ux-workflow-spacer"></div>
+  <button class="ux-ghost-btn" onclick="toggleCommandPalette()">⌘ Commands</button>
+  <button class="ux-ghost-btn ux-quality-btn" onclick="toggleQualityCenter()">Quality Center</button>
+</div>
 <!-- ══ RIBBON TOOLBAR ══ -->
 <div class="ribbon" id="mainToolbar">
 
@@ -1041,7 +1748,7 @@
   <div class="tb-sep"></div>
 
   <!-- Font family -->
-  <select class="tb-select" id="fontFamily" style="width:116px" onchange="applyFont()" data-tip="Font Family">
+  <select class="tb-select" id="fontFamily" title="Font Family" style="width:116px" onchange="applyFont()" data-tip="Font Family">
     <option>Segoe UI</option>
     <option>Arial</option>
     <option>Georgia</option>
@@ -1054,7 +1761,7 @@
   </select>
 
   <!-- Font size -->
-  <input type="number" class="tb-number" id="fontSize" value="14" min="6" max="120" onchange="applyFontSize()" data-tip="Font Size"/>
+  <input type="number" class="tb-number" id="fontSize" title="Font Size" value="14" min="6" max="120" onchange="applyFontSize()" data-tip="Font Size"/>
 
   <div class="tb-sep"></div>
 
@@ -1075,19 +1782,25 @@
   <div class="tb-sep"></div>
 
   <!-- Text color -->
-  <div class="tb-color-wrap" data-tip="Text Color">
-    <div class="tb-color-preview" id="txtColorPreview">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  <div class="tb-color-combo" data-tip="Text Color / Hex Code">
+    <div class="tb-color-wrap">
+      <div class="tb-color-preview" id="txtColorPreview">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </div>
+      <input type="color" id="txtColor" value="#000000" oninput="syncHexFromPicker('txtColor','txtColorHex'); applyTextColor()" onchange="syncHexFromPicker('txtColor','txtColorHex'); applyTextColor()"/>
     </div>
-    <input type="color" id="txtColor" value="#000000" onchange="applyTextColor()"/>
+    <input type="text" class="tb-hex-input" id="txtColorHex" value="#000000" maxlength="7" placeholder="#000000" title="Text color hex code" aria-label="Text color hex code" oninput="syncPickerFromHex('txtColorHex','txtColor', false)" onkeydown="hexColorKeydown(event,'txtColorHex','txtColor','text')" onblur="syncPickerFromHex('txtColorHex','txtColor', true); applyTextColor()"/>
   </div>
 
   <!-- Highlight -->
-  <div class="tb-color-wrap" data-tip="Highlight Color">
-    <div class="tb-color-preview" id="hlColorPreview">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+  <div class="tb-color-combo" data-tip="Highlight Color / Hex Code">
+    <div class="tb-color-wrap">
+      <div class="tb-color-preview" id="hlColorPreview">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      </div>
+      <input type="color" id="hlColor" value="#ffff00" oninput="syncHexFromPicker('hlColor','hlColorHex'); applyHighlight()" onchange="syncHexFromPicker('hlColor','hlColorHex'); applyHighlight()"/>
     </div>
-    <input type="color" id="hlColor" value="#ffff00" onchange="applyHighlight()"/>
+    <input type="text" class="tb-hex-input" id="hlColorHex" value="#ffff00" maxlength="7" placeholder="#ffff00" title="Highlight color hex code" aria-label="Highlight color hex code" oninput="syncPickerFromHex('hlColorHex','hlColor', false)" onkeydown="hexColorKeydown(event,'hlColorHex','hlColor','highlight')" onblur="syncPickerFromHex('hlColorHex','hlColor', true); applyHighlight()"/>
   </div>
 
   <div class="tb-sep"></div>
@@ -1136,9 +1849,18 @@
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
   </button>
 
-  <!-- Image -->
-  <button class="tb-btn" data-tip="Edit Image Source" onclick="openImageEditor()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+  <!-- Insert Image -->
+  <button class="tb-btn" id="btnInsertImage" data-tip="Insert Image" title="Insert Image" aria-label="Insert Image" onclick="insertImage()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </svg>
+  </button>
+
+  <!-- Add Collapsible -->
+  <button class="tb-btn" id="btnAddCollapsible" data-tip="Add Collapsible Section" title="Add Collapsible Section" aria-label="Add Collapsible Section" onclick="addCollapsible()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>
   </button>
 
   <!-- Inline code -->
@@ -1259,16 +1981,10 @@
         <span id="canvasTopLabel">Live Canvas</span>
       </div>
 
-      <!-- ★ PREVIEW / EDIT MODE TOGGLE ★ -->
-      <div class="mode-toggle-wrap" id="modeToggleWrap" style="margin-left:10px;opacity:0.4;pointer-events:none" data-tip="Render HTML first to switch modes">
-        <button class="mode-toggle-btn preview-btn active" id="btnPreviewMode" onclick="setMode('preview')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          Preview
-        </button>
-        <button class="mode-toggle-btn edit-btn" id="btnEditMode" onclick="setMode('edit')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Edit
-        </button>
+      <!-- Live editing status: rendering now enables editing automatically -->
+      <div class="live-edit-status" id="liveEditStatus" style="margin-left:10px;display:flex;opacity:.55;align-items:center;gap:7px;height:26px;padding:0 11px;border:1px solid rgba(16,124,16,.22);background:rgba(16,124,16,.08);border-radius:999px;font-size:11px;font-weight:600;color:#107c10;white-space:nowrap;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#107c10;box-shadow:0 0 0 3px rgba(16,124,16,.12);"></span>
+        Live Editing Ready
       </div>
 
       <div style="flex:1"></div>
@@ -1279,13 +1995,17 @@
         <span id="copyBtnText">Copy HTML</span>
       </button>
 
-      <button class="btn-outline" onclick="exportHTML()" style="height:26px;font-size:11px;padding:0 10px;margin-left:4px;">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export .html
+      <button class="btn-outline" onclick="viewHTML()" style="height:26px;font-size:11px;padding:0 10px;margin-left:4px;" data-tip="Open rendered HTML in a new tab">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        View HTML
       </button>
       <button class="btn-standards" id="btnStandards" onclick="toggleStandards()" style="margin-left:4px;" data-tip="Check article against KB standards">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         Standards Check
+      </button>
+      <button class="btn-standards" id="btnAccessibility" onclick="toggleAccessibility()" style="margin-left:4px;" data-tip="Check article against MAS accessibility standards">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><path d="M7 9h10"/></svg>
+        MAS Check
       </button>
     </div>
 
@@ -1402,6 +2122,35 @@
       </div>
     </div>
 
+
+
+    <!-- ══ MAS ACCESSIBILITY CHECKER PANEL ══ -->
+    <div class="standards-panel" id="accessibilityPanel">
+      <div class="standards-panel-header">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/><path d="M7 9h10"/></svg>
+        MAS Accessibility Check
+        <button class="standards-panel-close" onclick="toggleAccessibility()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="standards-panel-body" id="accessibilityBody">
+        <div style="text-align:center;color:var(--text-dim);font-size:12px;padding:30px 10px">
+          Render HTML first, then run MAS Accessibility Check to validate your article.
+        </div>
+      </div>
+      <div class="std-summary" id="accessibilitySummary" style="display:none">
+        <div class="std-summary-row">
+          <span id="masScoreLabel">Score</span>
+          <span id="masScoreValue" style="font-weight:600"></span>
+        </div>
+        <div class="std-score-bar"><div class="std-score-fill" id="masScoreFill"></div></div>
+        <button class="btn-apply-standards" onclick="applyAccessibilityFixes()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/></svg>
+          Auto-Fix Accessibility
+        </button>
+      </div>
+    </div>
+
     <!-- STATUS BAR -->
     <div class="statusbar">
       <div class="status-item">
@@ -1440,10 +2189,77 @@
   </div>
 </div>
 
+
+
+<!-- ══ UX QUALITY CENTER ══ -->
+<div class="quality-center-panel" id="qualityCenterPanel" aria-label="Quality Center">
+  <div class="qc-head">
+    <div class="qc-icon">✓</div>
+    <div><div class="qc-title">Quality Center</div><div class="qc-sub">Unified KB + MAS validation workflow</div></div>
+    <button class="qc-close" onclick="toggleQualityCenter(false)" aria-label="Close Quality Center">×</button>
+  </div>
+  <div class="qc-score-wrap">
+    <div class="qc-score-row"><span class="qc-score-label">Publish readiness</span><span class="qc-score-value" id="qcScoreValue">—</span></div>
+    <div class="qc-progress"><div class="qc-progress-fill" id="qcScoreFill"></div></div>
+    <div class="qc-metrics">
+      <div class="qc-metric"><b id="qcPassCount">0</b><span>Passed</span></div>
+      <div class="qc-metric"><b id="qcInfoCount">0</b><span>Info</span></div>
+      <div class="qc-metric"><b id="qcWarnCount">0</b><span>Warn</span></div>
+      <div class="qc-metric"><b id="qcFailCount">0</b><span>Failed</span></div>
+    </div>
+  </div>
+  <div class="qc-actions">
+    <button class="qc-action" onclick="uxRunQualityCenter()">Run Checks</button>
+    <button class="qc-action" onclick="uxInsertImagePlaceholder()">Insert Image</button>
+    <button class="qc-action" onclick="uxInsertLinkPlaceholder()">Insert Link</button>
+  </div>
+  <div class="qc-body" id="qualityCenterBody"><div class="qc-empty">Run checks to see combined KB Standards and MAS Accessibility results here.</div></div>
+  <div class="qc-nav"><button onclick="uxNavigateIssue(-1)">← Previous</button><button onclick="uxNavigateIssue(1)">Next →</button><button class="primary" onclick="uxRunQualityCenter()">Refresh</button></div>
+</div>
+
+<!-- ══ COMMAND PALETTE ══ -->
+<div class="command-palette-backdrop" id="commandPaletteBackdrop" onclick="toggleCommandPalette(false)">
+  <div class="command-palette" onclick="event.stopPropagation()">
+    <input class="cmd-input" id="commandPaletteInput" placeholder="Search commands… e.g., add collapsible, run checks, view html" oninput="renderCommandPalette()" onkeydown="uxCommandKey(event)">
+    <div class="cmd-list" id="commandPaletteList"></div>
+  </div>
+</div>
+
+<!-- ══ FLOATING SELECTION TOOLBAR ══ -->
+<div class="floating-selection-toolbar" id="floatingSelectionToolbar">
+  <button class="fst-btn" onclick="toggleCmd('bold','btnBold')">B</button>
+  <button class="fst-btn" onclick="toggleCmd('italic','btnItalic')"><i>I</i></button>
+  <button class="fst-btn" onclick="toggleCmd('underline','btnUnderline')"><u>U</u></button>
+  <span class="fst-sep"></span>
+  <button class="fst-btn" onclick="openLinkEditor()">Link</button>
+</div>
+
+
+
+<!-- ══ CONTEXT-SENSITIVE HELP MODAL ══ -->
+<div class="context-help-backdrop" id="contextHelpBackdrop" onclick="closeContextHelp()">
+  <div class="context-help-card" onclick="event.stopPropagation()">
+    <div class="context-help-head">
+      <div class="context-help-icon">i</div>
+      <div>
+        <div class="context-help-title" id="contextHelpTitle">Guideline Help</div>
+        <div class="context-help-sub" id="contextHelpSub">Why am I seeing this?</div>
+      </div>
+      <button class="context-help-close" onclick="closeContextHelp()" aria-label="Close help">×</button>
+    </div>
+    <div class="context-help-body" id="contextHelpBody"></div>
+    <div class="context-help-actions">
+      <button onclick="closeContextHelp()">Close</button>
+      <button class="primary" id="contextHelpHighlightBtn" onclick="contextHelpHighlightIssue()">Highlight related area</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ─── STATE ─── */
 let iframeDoc = null;
 let savedRange = null;
+let selectedCollapsiblePanel = null;
 let currentMode = 'preview'; // 'preview' | 'edit'
 
 /* ─── RESIZE PANEL ─── */
@@ -1521,6 +2337,13 @@ function wrapFragment(fragment) {
     '}' +
     'var heads = document.querySelectorAll("div.collapsible_panel_head");' +
     'heads.forEach(function(head){' +
+      'var body=head.nextElementSibling;' +
+      'if(body && body.classList && body.classList.contains("collapsible_panel_body")){' +
+        'body.style.display="none";' +
+        'body.setAttribute("aria-hidden","true");' +
+        'head.classList.remove("kb-open");' +
+        'head.setAttribute("aria-expanded","false");' +
+      '}' +
       'head.addEventListener("click", function(){ setTimeout(function(){ sync(head); }, 0); });' +
     '});' +
 
@@ -1586,13 +2409,19 @@ function enhanceCollapsibles(htmlCode) {
     'document.querySelectorAll("div.collapsible_panel_head").forEach(function(head){' +
       'var body=head.nextElementSibling;' +
       'if(body&&body.classList&&body.classList.contains("collapsible_panel_body")){' +
-        'if(!body.style.display){body.style.display="none";}' +
+        'body.style.display="none";' +
+        'body.setAttribute("aria-hidden","true");' +
+        'head.classList.remove("kb-open");' +
+        'head.setAttribute("aria-expanded","false");' +
         'sync(head);' +
       '}' +
       'head.onclick=function(){' +
         'var body=this.nextElementSibling;' +
         'if(!body||!body.classList||!body.classList.contains("collapsible_panel_body")) return;' +
-        'body.style.display=body.style.display==="block"?"none":"block";' +
+        'var open = body.style.display!=="block";' +
+        'body.style.display=open?"block":"none";' +
+        'body.setAttribute("aria-hidden", open?"false":"true");' +
+        'this.setAttribute("aria-expanded", open?"true":"false");' +
         'sync(this);' +
       '};' +
       'head.onkeypress=function(event){if(event.keyCode===13||event.keyCode===32){this.click();}};' +
@@ -1657,29 +2486,26 @@ function renderHTML() {
   frame.style.display = 'block';
   document.getElementById('canvasDot').classList.remove('inactive');
 
-  const modeWrap = document.getElementById('modeToggleWrap');
-  modeWrap.style.opacity = '1';
-  modeWrap.style.pointerEvents = 'auto';
-  modeWrap.removeAttribute('data-tip');
-
-  currentMode = 'preview';
+  currentMode = 'edit';
 
   showOverlay(true);
   setStatus('Rendering…', false);
   renderToFrame(code, function(doc) {
     iframeDoc = doc;
     updateStats(doc);
-    applyPreviewMode(doc);
+    applyEditMode(doc);
     showOverlay(false);
-    setStatus('Rendered ✓ — Preview mode active', true);
+    setStatus('Rendered ✓ — Live editing enabled', true);
   });
 }
 
 /* ─── PREVIEW MODE ─── */
 function applyPreviewMode(doc) {
   try { if (doc.designMode !== 'off') doc.designMode = 'off'; } catch(e) {}
-  document.getElementById('btnPreviewMode').classList.add('active');
-  document.getElementById('btnEditMode').classList.remove('active');
+  const prevBtn = document.getElementById('btnPreviewMode');
+  const editBtn = document.getElementById('btnEditMode');
+  if (prevBtn) prevBtn.classList.add('active');
+  if (editBtn) editBtn.classList.remove('active');
   document.getElementById('mainToolbar').classList.add('preview-mode');
   document.getElementById('canvasInner').className = 'canvas-inner preview-mode';
   document.getElementById('canvasTopLabel').textContent = 'Preview — dropdowns & collapsible panels active';
@@ -1703,46 +2529,189 @@ function applyEditMode(doc) {
     if (sel && sel.rangeCount > 0) _savedRange = sel.getRangeAt(0).cloneRange();
   });
   injectListeners(doc);
+  resetEditHistory();
+  pushHistorySnapshot(true);
   updateStats(doc);
-  document.getElementById('btnEditMode').classList.add('active');
-  document.getElementById('btnPreviewMode').classList.remove('active');
+  const editBtn = document.getElementById('btnEditMode');
+  const prevBtn = document.getElementById('btnPreviewMode');
+  if (editBtn) editBtn.classList.add('active');
+  if (prevBtn) prevBtn.classList.remove('active');
   document.getElementById('mainToolbar').classList.remove('preview-mode');
   document.getElementById('canvasInner').className = 'canvas-inner edit-mode';
-  document.getElementById('canvasTopLabel').textContent = 'Edit Mode — click any text to edit';
+  document.getElementById('canvasTopLabel').textContent = 'Live Editing — click any content to edit';
+  const liveStatus = document.getElementById('liveEditStatus');
+  if (liveStatus) { liveStatus.style.opacity = '1'; liveStatus.lastChild.textContent = 'Live Editing Enabled'; }
   document.getElementById('modeBadge').style.display = 'flex';
-  setStatus('Edit mode — click text to position cursor, then use toolbar', false);
+  setStatus('Live editing enabled — select text or click content to edit', true);
 }
 
 /* ─── MODE SWITCH ─── */
 function setMode(mode) {
+  // Preview/Edit toggle was removed: rendering always enables live editing.
   if (!iframeDoc) return;
-  if (mode === currentMode) return;
-  currentMode = mode;
-  if (mode === 'preview') {
-    // Sync edits, strip contentEditable, then re-render fresh
-    if (iframeDoc.body) iframeDoc.body.removeAttribute('contenteditable');
-    syncCode(true);
-    const code = document.getElementById('codeInput').value.trim();
-    showOverlay(true);
-    renderToFrame(code, function(doc) {
-      iframeDoc = doc;
-      updateStats(doc);
-      applyPreviewMode(doc);
-      showOverlay(false);
-      setStatus('Back to Preview mode — scripts live', true);
-    });
-  } else {
-    applyEditMode(iframeDoc);
+  currentMode = 'edit';
+  applyEditMode(iframeDoc);
+}
+
+
+function enableSmartLinkInteractions(doc) {
+  if (!doc || !doc.body || doc._smartLinkInteractionsEnabled) return;
+  doc._smartLinkInteractionsEnabled = true;
+
+  doc.addEventListener('click', function(e) {
+    const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!link) return;
+
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      const href = link.getAttribute('href');
+      if (href && href !== '#') {
+        window.open(href, '_blank', 'noopener,noreferrer');
+        setStatus('Opened link in new tab ✓', true);
+      } else {
+        setStatus('Link has no valid URL', false);
+      }
+      return;
+    }
+
+    // In live-edit mode, regular click should allow cursor/selection editing,
+    // not navigate away from the article canvas.
+    e.preventDefault();
+  }, true);
+
+  doc.addEventListener('contextmenu', function(e) {
+    const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!link) return;
+
+    // Link right-click takes priority over collapsible delete selection.
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+
+    _editingLinkEl = link;
+    openLinkEditor(link);
+    setStatus('Editing selected link', true);
+  }, true);
+}
+
+function enableCollapsibleDeleteSelection(doc) {
+  if (!doc || !doc.body || doc._collapsibleDeleteEnabled) return;
+  doc._collapsibleDeleteEnabled = true;
+
+  // Add visual selection style inside the rendered article iframe.
+  if (!doc.getElementById('kb-collapsible-delete-style')) {
+    const style = doc.createElement('style');
+    style.id = 'kb-collapsible-delete-style';
+    style.textContent = `
+      section.collapsible_panel.kb-panel-selected-for-delete {
+        outline: 2px solid #0078d4 !important;
+        outline-offset: 2px !important;
+        background: rgba(0,120,212,.045) !important;
+        box-shadow: 0 0 0 4px rgba(0,120,212,.10) !important;
+      }
+      section.collapsible_panel.kb-panel-selected-for-delete > .collapsible_panel_head {
+        background: rgba(0,120,212,.10) !important;
+      }
+    `;
+    (doc.head || doc.documentElement).appendChild(style);
   }
+
+  function clearSelectedCollapsible() {
+    if (selectedCollapsiblePanel && selectedCollapsiblePanel.classList) {
+      selectedCollapsiblePanel.classList.remove('kb-panel-selected-for-delete');
+    }
+    selectedCollapsiblePanel = null;
+  }
+
+  function selectCollapsible(panel) {
+    clearSelectedCollapsible();
+    selectedCollapsiblePanel = panel;
+    panel.classList.add('kb-panel-selected-for-delete');
+    try { panel.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch(e) {}
+    setStatus('Collapsible selected — press Delete to remove, Esc to cancel', true);
+  }
+
+  // Right-click any part of a collapsible section to select the whole component.
+  doc.addEventListener('contextmenu', function(e) {
+    const panel = e.target && e.target.closest ? e.target.closest('section.collapsible_panel') : null;
+    if (!panel) return;
+    e.preventDefault();
+    selectCollapsible(panel);
+  }, true);
+
+  // Left-click outside the selected collapsible clears the delete selection.
+  doc.addEventListener('mousedown', function(e) {
+    if (!selectedCollapsiblePanel) return;
+    const panel = e.target && e.target.closest ? e.target.closest('section.collapsible_panel') : null;
+    if (panel !== selectedCollapsiblePanel) clearSelectedCollapsible();
+  }, true);
+
+  doc.addEventListener('keydown', function(e) {
+    if (!selectedCollapsiblePanel) return;
+    const key = e.key || '';
+
+    if (key === 'Escape') {
+      e.preventDefault();
+      clearSelectedCollapsible();
+      setStatus('Collapsible selection cancelled', true);
+      return;
+    }
+
+    if (key === 'Delete' || key === 'Backspace') {
+      e.preventDefault();
+      const panel = selectedCollapsiblePanel;
+      clearSelectedCollapsible();
+      pushHistorySnapshot(false);
+      panel.remove();
+      syncCode();
+      pushHistoryDebounced();
+      updateStats(doc);
+      setStatus('Collapsible section removed ✓', true);
+    }
+  }, true);
 }
 
 function injectListeners(doc) {
-  doc.addEventListener('selectionchange', () => {
+  attachImageAltToolbarListeners(doc);
+  enableSmartLinkInteractions(doc);
+  enableCollapsibleDeleteSelection(doc);
+  const syncToolbarFromCanvasSelection = () => {
     const sel = doc.getSelection();
-    if (sel && sel.rangeCount) updateToolbarState(doc);
+    if (sel && sel.rangeCount) {
+      saveRange();
+      updateToolbarState(doc);
+    }
+  };
+
+  doc.addEventListener('selectionchange', syncToolbarFromCanvasSelection);
+  doc.addEventListener('mouseup', syncToolbarFromCanvasSelection);
+  doc.addEventListener('keyup', syncToolbarFromCanvasSelection);
+
+  // Store the previous state before browser text edits, paste, delete, etc.
+  doc.addEventListener('beforeinput', () => pushHistorySnapshot(false));
+
+  // Store the new state after edits. This makes toolbar Undo/Redo work even for typed/replaced text.
+  doc.addEventListener('input', () => {
+    syncCode();
+    pushHistoryDebounced();
   });
+
+  doc.addEventListener('keydown', function(e) {
+    const key = (e.key || '').toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) customRedo(); else customUndo();
+    }
+    if ((e.ctrlKey || e.metaKey) && key === 'y') {
+      e.preventDefault();
+      customRedo();
+    }
+  });
+
   let _statsTimer = null;
   const mo = new MutationObserver(() => {
+    if (!_historyLock) pushHistoryDebounced();
     syncCode(); // already debounced
     clearTimeout(_statsTimer);
     _statsTimer = setTimeout(() => updateStats(doc), 800);
@@ -1776,6 +2745,79 @@ function updateStats(doc) {
 
 /* ─── TOOLBAR COMMANDS ─── */
 let _savedRange = null;
+let _editingLinkEl = null;
+
+/* ─── EDIT HISTORY: custom Undo / Redo for iframe contenteditable ─── */
+let _editHistory = [];
+let _editHistoryIndex = -1;
+let _historyLock = false;
+let _historyTimer = null;
+
+function getHistorySnapshot() {
+  if (!iframeDoc || !iframeDoc.body) return '';
+  return iframeDoc.body.innerHTML;
+}
+
+function resetEditHistory() {
+  _editHistory = [];
+  _editHistoryIndex = -1;
+  clearTimeout(_historyTimer);
+}
+
+function pushHistorySnapshot(force) {
+  if (_historyLock || !iframeDoc || !iframeDoc.body || currentMode !== 'edit') return;
+  const html = getHistorySnapshot();
+  if (!force && _editHistory[_editHistoryIndex] === html) return;
+  if (_editHistory[_editHistoryIndex] === html) return;
+
+  // If user undid then edits again, discard redo states.
+  if (_editHistoryIndex < _editHistory.length - 1) {
+    _editHistory = _editHistory.slice(0, _editHistoryIndex + 1);
+  }
+
+  _editHistory.push(html);
+  if (_editHistory.length > 100) _editHistory.shift();
+  _editHistoryIndex = _editHistory.length - 1;
+}
+
+function pushHistoryDebounced() {
+  clearTimeout(_historyTimer);
+  _historyTimer = setTimeout(() => pushHistorySnapshot(false), 250);
+}
+
+function restoreHistorySnapshot(index) {
+  if (!iframeDoc || !iframeDoc.body) return;
+  if (index < 0 || index >= _editHistory.length) return;
+  _historyLock = true;
+  iframeDoc.body.innerHTML = _editHistory[index];
+  _editHistoryIndex = index;
+  _historyLock = false;
+
+  _savedRange = null;
+  syncCode(true);
+  updateStats(iframeDoc);
+  updateToolbarState(iframeDoc);
+}
+
+function customUndo() {
+  // Capture any last uncommitted edit before stepping back.
+  pushHistorySnapshot(false);
+  if (_editHistoryIndex > 0) {
+    restoreHistorySnapshot(_editHistoryIndex - 1);
+    setStatus('Undo ✓', true);
+  } else {
+    setStatus('Nothing to undo', false);
+  }
+}
+
+function customRedo() {
+  if (_editHistoryIndex < _editHistory.length - 1) {
+    restoreHistorySnapshot(_editHistoryIndex + 1);
+    setStatus('Redo ✓', true);
+  } else {
+    setStatus('Nothing to redo', false);
+  }
+}
 
 function saveRange() {
   if (!iframeDoc || currentMode !== 'edit') return;
@@ -1786,54 +2828,309 @@ function saveRange() {
 }
 
 function restoreRange() {
-  if (!iframeDoc || !_savedRange) return;
+  if (!iframeDoc || !_savedRange) return false;
   try {
     iframeDoc.defaultView.focus();
     const sel = iframeDoc.getSelection();
     sel.removeAllRanges();
     sel.addRange(_savedRange);
-  } catch(e) {}
+    return true;
+  } catch(e) { return false; }
+}
+
+function getEditorSelection(requireSelection) {
+  if (!iframeDoc || currentMode !== 'edit') {
+    noEditor('Switch to Edit mode first');
+    return null;
+  }
+
+  restoreRange();
+  try { iframeDoc.defaultView.focus(); } catch(e) {}
+
+  const sel = iframeDoc.getSelection();
+  if (!sel || !sel.rangeCount) {
+    if (requireSelection) noEditor('Select text first');
+    return null;
+  }
+
+  const range = sel.getRangeAt(0);
+  if (!iframeDoc.body.contains(range.commonAncestorContainer)) {
+    if (requireSelection) noEditor('Select text inside the canvas first');
+    return null;
+  }
+
+  if (requireSelection && range.collapsed) {
+    noEditor('Select text first');
+    return null;
+  }
+
+  return { sel, range };
+}
+
+function refreshAfterFormat(message) {
+  saveRange();
+  syncCode(true);
+  if (iframeDoc) updateToolbarState(iframeDoc);
+  if (message) setStatus(message, true);
 }
 
 function editorCmd(cmd, val) {
   if (!iframeDoc) return noEditor();
   if (currentMode !== 'edit') return noEditor('Switch to Edit mode first');
+
+  if (cmd === 'undo') return customUndo();
+  if (cmd === 'redo') return customRedo();
+
   restoreRange();
-  try { iframeDoc.execCommand(cmd, false, val || null); } catch(e) {}
+  try {
+    pushHistorySnapshot(false);
+    iframeDoc.defaultView.focus();
+    iframeDoc.execCommand('styleWithCSS', false, true);
+    iframeDoc.execCommand(cmd, false, val || null);
+    pushHistorySnapshot(false);
+    refreshAfterFormat();
+  } catch(e) {
+    noEditor('Command could not be applied');
+  }
 }
 
 function toggleCmd(cmd, btnId) {
-  restoreRange();
   editorCmd(cmd);
-  document.getElementById(btnId)?.classList.toggle('active');
+  try { document.getElementById(btnId)?.classList.toggle('active', iframeDoc.queryCommandState(cmd)); } catch(e) {}
 }
 
-function applyFont() { restoreRange(); editorCmd('fontName', document.getElementById('fontFamily').value); }
+function applyInlineStyle(styles, statusText) {
+  const ctx = getEditorSelection(true);
+  if (!ctx) return;
+  pushHistorySnapshot(false);
+  const range = ctx.range;
+  const span = iframeDoc.createElement('span');
+  Object.keys(styles).forEach(k => span.style[k] = styles[k]);
+
+  try {
+    range.surroundContents(span);
+  } catch(e) {
+    const content = range.extractContents();
+    span.appendChild(content);
+    range.insertNode(span);
+  }
+
+  // Keep the newly formatted text selected so users can apply another toolbar action.
+  const sel = iframeDoc.getSelection();
+  sel.removeAllRanges();
+  const newRange = iframeDoc.createRange();
+  newRange.selectNodeContents(span);
+  sel.addRange(newRange);
+  _savedRange = newRange.cloneRange();
+  pushHistorySnapshot(false);
+  refreshAfterFormat(statusText);
+}
+
+function applyFont() {
+  const font = document.getElementById('fontFamily').value;
+  applyInlineStyle({ fontFamily: font + ', Helvetica, sans-serif' }, 'Font family applied');
+}
 
 function applyFontSize() {
-  if (!iframeDoc || currentMode !== 'edit') return noEditor('Switch to Edit mode first');
-  const size = parseInt(document.getElementById('fontSize').value) || 14;
-  try { iframeDoc.defaultView.focus(); } catch(e) {}
-  const sel = iframeDoc.getSelection();
-  if (!sel || sel.isCollapsed) return;
-  const range = sel.getRangeAt(0);
-  const span = iframeDoc.createElement('span');
-  span.style.fontSize = size + 'px';
-  try { range.surroundContents(span); } catch(e) {}
+  const size = parseFloat(document.getElementById('fontSize').value) || 12;
+  applyInlineStyle({ fontSize: size + 'pt' }, 'Font size applied');
 }
 
-function applyTextColor() { restoreRange(); editorCmd('foreColor', document.getElementById('txtColor').value); }
-function applyHighlight() { restoreRange(); editorCmd('hiliteColor', document.getElementById('hlColor').value); }
-function applyHeading() { restoreRange(); editorCmd('formatBlock', document.getElementById('headingLevel').value); }
+function applyTextColor() {
+  syncPickerFromHex('txtColorHex','txtColor', true);
+  applyInlineStyle({ color: document.getElementById('txtColor').value }, 'Text color applied');
+}
+
+function applyHighlight() {
+  syncPickerFromHex('hlColorHex','hlColor', true);
+  applyInlineStyle({ backgroundColor: document.getElementById('hlColor').value }, 'Highlight applied');
+}
+
+function applyHeading() {
+  if (!iframeDoc || currentMode !== 'edit') return noEditor('Switch to Edit mode first');
+  restoreRange();
+  try {
+    iframeDoc.defaultView.focus();
+    const val = document.getElementById('headingLevel').value;
+    iframeDoc.execCommand('formatBlock', false, '<' + val + '>');
+    refreshAfterFormat('Paragraph style applied');
+  } catch(e) {
+    editorCmd('formatBlock', document.getElementById('headingLevel').value);
+  }
+}
 
 function wrapSelection(tag) {
-  if (!iframeDoc || currentMode !== 'edit') return noEditor('Switch to Edit mode first');
-  try { iframeDoc.defaultView.focus(); } catch(e) {}
-  const sel = iframeDoc.getSelection();
-  if (!sel || sel.isCollapsed) return noEditor('Select text first');
-  const range = sel.getRangeAt(0);
+  const ctx = getEditorSelection(true);
+  if (!ctx) return;
+  const range = ctx.range;
   const el = iframeDoc.createElement(tag);
-  try { range.surroundContents(el); } catch(e) {}
+  try {
+    range.surroundContents(el);
+  } catch(e) {
+    const content = range.extractContents();
+    el.appendChild(content);
+    range.insertNode(el);
+  }
+  const sel = iframeDoc.getSelection();
+  sel.removeAllRanges();
+  const newRange = iframeDoc.createRange();
+  newRange.selectNodeContents(el);
+  sel.addRange(newRange);
+  _savedRange = newRange.cloneRange();
+  refreshAfterFormat(tag.toUpperCase() + ' applied');
+}
+
+function getSelectedStyleElement(doc) {
+  try {
+    const sel = doc.getSelection();
+    if (!sel || !sel.rangeCount) return null;
+
+    let node = sel.anchorNode;
+
+    // When text is highlighted across multiple nodes, commonAncestorContainer is more reliable.
+    const range = sel.getRangeAt(0);
+    if (range && range.commonAncestorContainer) node = range.commonAncestorContainer;
+
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    if (!node || !node.closest) return null;
+
+    // Prefer the deepest actual styled text element near the selection.
+    const start = sel.anchorNode && sel.anchorNode.nodeType === Node.TEXT_NODE
+      ? sel.anchorNode.parentElement
+      : (sel.anchorNode && sel.anchorNode.closest ? sel.anchorNode : node);
+
+    return start || node;
+  } catch(e) {
+    return null;
+  }
+}
+
+function getInlineOrComputedStyleValue(el, prop, cssProp) {
+  let cur = el;
+  while (cur && cur.nodeType === 1) {
+    if (cur.style && cur.style[prop]) return cur.style[prop];
+    cur = cur.parentElement;
+  }
+  try { return el.ownerDocument.defaultView.getComputedStyle(el).getPropertyValue(cssProp); } catch(e) {}
+  return '';
+}
+
+function normalizeFontFamilyName(fontFamily) {
+  if (!fontFamily) return '';
+  const first = fontFamily.split(',')[0].replace(/["']/g, '').trim();
+  const options = [...document.getElementById('fontFamily').options].map(o => o.value || o.textContent);
+  const exact = options.find(o => o.toLowerCase() === first.toLowerCase());
+  if (exact) return exact;
+  const contains = options.find(o => fontFamily.toLowerCase().includes(o.toLowerCase()));
+  return contains || first;
+}
+
+function normalizeFontSizeToToolbar(sizeValue) {
+  if (!sizeValue) return '';
+  const value = String(sizeValue).trim().toLowerCase();
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '';
+
+  // Prefer authoring units when the pasted/source HTML uses pt.
+  if (value.includes('pt')) return Math.round(num).toString();
+
+  // Browser computed styles usually return px. Convert px -> pt.
+  if (value.includes('px')) return Math.round(num * 0.75).toString();
+
+  return Math.round(num).toString();
+}
+
+function normalizeHexColor(value) {
+  if (!value) return '';
+  let hex = String(value).trim().toLowerCase();
+  if (!hex) return '';
+  if (hex[0] !== '#') hex = '#' + hex;
+  if (/^#[0-9a-f]{3}$/i.test(hex)) {
+    hex = '#' + hex.slice(1).split('').map(ch => ch + ch).join('');
+  }
+  return /^#[0-9a-f]{6}$/i.test(hex) ? hex : '';
+}
+
+function rgbToHex(value) {
+  if (!value) return '';
+  const normalized = normalizeHexColor(value);
+  if (normalized) return normalized;
+  const match = String(value).match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (!match) return '';
+  return '#' + [match[1], match[2], match[3]].map(v => {
+    const n = Math.max(0, Math.min(255, parseInt(v, 10) || 0));
+    return n.toString(16).padStart(2, '0');
+  }).join('');
+}
+
+function setToolbarHexColor(colorInputId, hexInputId, colorValue) {
+  const hex = rgbToHex(colorValue);
+  if (!hex) return;
+  const picker = document.getElementById(colorInputId);
+  const text = document.getElementById(hexInputId);
+  if (picker) picker.value = hex;
+  if (text) {
+    text.value = hex;
+    text.classList.remove('invalid');
+  }
+}
+
+function syncHexFromPicker(colorInputId, hexInputId) {
+  const picker = document.getElementById(colorInputId);
+  const text = document.getElementById(hexInputId);
+  if (!picker || !text) return;
+  text.value = picker.value.toLowerCase();
+  text.classList.remove('invalid');
+}
+
+function syncPickerFromHex(hexInputId, colorInputId, normalizeDisplay) {
+  const text = document.getElementById(hexInputId);
+  const picker = document.getElementById(colorInputId);
+  if (!text || !picker) return false;
+  const hex = normalizeHexColor(text.value);
+  if (!hex) {
+    text.classList.add('invalid');
+    return false;
+  }
+  picker.value = hex;
+  if (normalizeDisplay) text.value = hex;
+  text.classList.remove('invalid');
+  return true;
+}
+
+function hexColorKeydown(event, hexInputId, colorInputId, target) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  if (!syncPickerFromHex(hexInputId, colorInputId, true)) return;
+  if (target === 'highlight') applyHighlight();
+  else applyTextColor();
+}
+
+function syncFontToolbarFromSelection(doc) {
+  const el = getSelectedStyleElement(doc);
+  if (!el) return;
+
+  const fontFamilyValue = getInlineOrComputedStyleValue(el, 'fontFamily', 'font-family');
+  const fontName = normalizeFontFamilyName(fontFamilyValue);
+  const ff = document.getElementById('fontFamily');
+  if (ff && fontName) {
+    const match = [...ff.options].find(o => (o.value || o.textContent).toLowerCase() === fontName.toLowerCase());
+    if (match) ff.value = match.value || match.textContent;
+  }
+
+  const fontSizeValue = getInlineOrComputedStyleValue(el, 'fontSize', 'font-size');
+  const size = normalizeFontSizeToToolbar(fontSizeValue);
+  const fs = document.getElementById('fontSize');
+  if (fs && size) fs.value = size;
+
+  const textColorValue = getInlineOrComputedStyleValue(el, 'color', 'color');
+  setToolbarHexColor('txtColor', 'txtColorHex', textColorValue);
+
+  const highlightValue = getInlineOrComputedStyleValue(el, 'backgroundColor', 'background-color');
+  const highlightHex = rgbToHex(highlightValue);
+  if (highlightHex && highlightHex !== '#000000') {
+    setToolbarHexColor('hlColor', 'hlColorHex', highlightHex);
+  }
 }
 
 function updateToolbarState(doc) {
@@ -1841,7 +3138,18 @@ function updateToolbarState(doc) {
     .forEach(([cmd, id]) => {
       try { document.getElementById(id)?.classList.toggle('active', doc.queryCommandState(cmd)); } catch(e) {}
     });
+
+  // Auto-detect selected text font family and font size from the rendered iframe.
+  syncFontToolbarFromSelection(doc);
 }
+
+// Keep the iframe selection saved when the user clicks or changes toolbar controls.
+document.addEventListener('mousedown', function(e) {
+  if (e.target && e.target.closest && e.target.closest('#mainToolbar')) saveRange();
+}, true);
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.closest && e.target.closest('#mainToolbar')) saveRange();
+}, true);
 
 /* ─── COPY HTML ─── */
 function copyHTML() {
@@ -1878,36 +3186,241 @@ function copyHTML() {
 }
 
 /* ─── LINK EDITOR ─── */
-function openLinkEditor() {
-  if (!iframeDoc) return noEditor();
-  const sel = iframeDoc.getSelection();
-  if (sel && sel.rangeCount) savedRange = sel.getRangeAt(0).cloneRange();
+function positionLinkPopup() {
   const popup = document.getElementById('linkPopup');
   popup.classList.add('open');
   popup.style.top = '104px';
   popup.style.right = '20px';
 }
-function closeLinkPopup() { document.getElementById('linkPopup').classList.remove('open'); }
+
+function openLinkEditor(linkEl) {
+  if (!iframeDoc) return noEditor();
+  _editingLinkEl = linkEl && linkEl.tagName === 'A' ? linkEl : null;
+
+  const sel = iframeDoc.getSelection();
+  if (!_editingLinkEl && sel && sel.rangeCount) _savedRange = sel.getRangeAt(0).cloneRange();
+
+  if (_editingLinkEl) {
+    document.getElementById('linkUrl').value = _editingLinkEl.getAttribute('href') || '';
+    document.getElementById('linkText').value = _editingLinkEl.textContent || '';
+    document.getElementById('linkTarget').value = _editingLinkEl.getAttribute('target') || '_self';
+  }
+
+  positionLinkPopup();
+}
+function closeLinkPopup() {
+  document.getElementById('linkPopup').classList.remove('open');
+  _editingLinkEl = null;
+}
 function applyLink() {
-  const url = document.getElementById('linkUrl').value;
+  const url = document.getElementById('linkUrl').value.trim();
   const text = document.getElementById('linkText').value;
   const target = document.getElementById('linkTarget').value;
   if (!url) return;
-  if (savedRange) {
+
+  pushHistorySnapshot(false);
+
+  if (_editingLinkEl) {
+    _editingLinkEl.setAttribute('href', url);
+    _editingLinkEl.setAttribute('target', target);
+    if (text) _editingLinkEl.textContent = text;
+    closeLinkPopup();
+    syncCode();
+    pushHistoryDebounced();
+    setStatus('Link updated ✓', true);
+    return;
+  }
+
+  if (_savedRange) {
     try { iframeDoc.defaultView.focus(); } catch(e) {}
     const sel = iframeDoc.getSelection();
     sel.removeAllRanges();
-    sel.addRange(savedRange);
+    sel.addRange(_savedRange);
   }
   if (text) {
-    iframeDoc.execCommand('insertHTML', false, `<a href="${url}" target="${target}">${text}</a>`);
+    iframeDoc.execCommand('insertHTML', false, `<a href="${escapeHTML(url)}" target="${target}">${escapeHTML(text)}</a>`);
   } else {
     iframeDoc.execCommand('createLink', false, url);
-    iframeDoc.querySelectorAll(`a[href="${url}"]`).forEach(l => l.target = target);
+    iframeDoc.querySelectorAll(`a[href="${CSS.escape ? CSS.escape(url) : url}"]`).forEach(l => l.target = target);
   }
   closeLinkPopup();
   document.getElementById('linkUrl').value = '';
   document.getElementById('linkText').value = '';
+  syncCode();
+  pushHistoryDebounced();
+  setStatus('Link applied ✓', true);
+}
+
+
+/* ─── ADD COLLAPSIBLE ─── */
+function escapeHTML(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function bindCollapsiblePanel(panel) {
+  if (!panel) return;
+  const head = panel.querySelector(':scope > .collapsible_panel_head');
+  const body = panel.querySelector(':scope > .collapsible_panel_body');
+  if (!head || !body) return;
+
+  function sync() {
+    if (body.style.display === 'block') head.classList.add('kb-open');
+    else head.classList.remove('kb-open');
+  }
+
+  if (!body.style.display) body.style.display = 'none';
+  head.onclick = function(event) {
+    // Allow editing text/links inside the header without unexpected bubbling issues.
+    const target = event.target;
+    if (target && target.closest && target.closest('a,input,textarea,select,button')) return;
+    body.style.display = body.style.display === 'block' ? 'none' : 'block';
+    sync();
+  };
+  head.onkeypress = function(event) {
+    if (event.keyCode === 13 || event.keyCode === 32) this.click();
+  };
+  head.setAttribute('tabindex', '0');
+  sync();
+}
+
+function addCollapsible() {
+  if (!iframeDoc || !iframeDoc.body) return noEditor('Render HTML first, then add a collapsible');
+
+  if (currentMode !== 'edit') {
+    currentMode = 'edit';
+    applyEditMode(iframeDoc);
+  }
+
+  const title = prompt('Collapsible title:', 'New Collapsible Section');
+  if (title === null) return;
+
+  const bodyText = prompt('Body text:', 'Add content here.');
+  if (bodyText === null) return;
+
+  const section = iframeDoc.createElement('section');
+  section.className = 'collapsible_panel collapsible_panel_noborder';
+  section.innerHTML =
+    '<div class="collapsible_panel_head" tabindex="0">' +
+      '<div class="collapsible_panel_icon" style="color:rgba(96,94,92,1);font-size:16px;height:16px;line-height:normal;outline:none;padding-top:1px;position:relative;width:16px;">&nbsp;</div>' +
+      '<div class="collapsible_panel_title">' +
+        '<p style="margin:0;">' +
+          '<span style="color:rgba(36,58,94,1);font-family:Segoe UI Semibold, Helvetica, sans-serif;font-size:14pt;">' + escapeHTML(title) + '</span>' +
+        '</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="collapsible_panel_body" style="display:none;">' +
+      '<p><span style="color:rgba(0,0,0,1);font-family:Segoe UI, Helvetica, sans-serif;font-size:12pt;">' + escapeHTML(bodyText) + '</span></p>' +
+    '</div>';
+
+  bindCollapsiblePanel(section);
+
+  try {
+    restoreRange();
+    const sel = iframeDoc.getSelection();
+    if (sel && sel.rangeCount && iframeDoc.body.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+      const range = sel.getRangeAt(0);
+      range.collapse(false);
+      range.insertNode(section);
+      const spacer = iframeDoc.createTextNode('\n');
+      section.parentNode.insertBefore(spacer, section.nextSibling);
+    } else {
+      const lastPanel = iframeDoc.body.querySelector('section.collapsible_panel:last-of-type');
+      if (lastPanel && lastPanel.parentNode) {
+        lastPanel.parentNode.insertBefore(section, lastPanel.nextSibling);
+      } else {
+        iframeDoc.body.appendChild(section);
+      }
+    }
+  } catch(e) {
+    iframeDoc.body.appendChild(section);
+  }
+
+  syncCode(true);
+  updateStats(iframeDoc);
+  setStatus('Collapsible added ✓', true);
+}
+
+
+/* ─── INSERT IMAGE ─── */
+function insertImage() {
+  if (!iframeDoc || !iframeDoc.body) return noEditor();
+  if (currentMode !== 'edit') return noEditor('Render & Edit first, then insert an image');
+
+  saveRange();
+
+  const picker = document.createElement('input');
+  picker.type = 'file';
+  picker.accept = 'image/*';
+
+  picker.onchange = function(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (!file.type || !file.type.startsWith('image/')) {
+      setStatus('Please select an image file', false);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const src = evt.target.result;
+      const img = iframeDoc.createElement('img');
+      img.src = src;
+      img.alt = '';
+      img.setAttribute('data-kb-inserted-image', 'true');
+      img.style.maxWidth = '100%';
+      img.style.height = 'auto';
+      img.style.display = 'block';
+      img.style.margin = '8px 0';
+
+      try { pushHistorySnapshot(false); } catch(e) {}
+
+      try {
+        const restored = restoreRange();
+        const sel = iframeDoc.getSelection();
+        if (restored && sel && sel.rangeCount && iframeDoc.body.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+          const range = sel.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(img);
+
+          const after = iframeDoc.createTextNode('\n');
+          if (img.parentNode) img.parentNode.insertBefore(after, img.nextSibling);
+
+          range.setStartAfter(img);
+          range.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } else {
+          iframeDoc.body.appendChild(img);
+        }
+      } catch(err) {
+        iframeDoc.body.appendChild(img);
+      }
+
+      try { pushHistorySnapshot(false); } catch(e) {}
+      syncCode(true);
+      updateStats(iframeDoc);
+      setStatus('Image inserted — add alt text for MAS compliance', true);
+
+      // Re-use the existing image alt-text toolbar so the author can immediately add accessibility text.
+      if (typeof showImageAltToolbar === 'function') {
+        setTimeout(function(){ showImageAltToolbar(img); }, 50);
+      }
+    };
+
+    reader.onerror = function() {
+      setStatus('Image could not be loaded', false);
+    };
+
+    reader.readAsDataURL(file);
+  };
+
+  picker.click();
 }
 
 /* ─── IMAGE EDITOR ─── */
@@ -1979,14 +3492,42 @@ function headerCopyHTML() {
   });
 }
 
+function viewHTML() {
+  let code = '';
+  const frame = document.getElementById('previewFrame');
+
+  try {
+    const doc = frame && frame.contentDocument;
+    if (doc && doc.documentElement && frame.style.display !== 'none') {
+      code = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
+    }
+  } catch (e) {
+    code = '';
+  }
+
+  if (!code.trim()) {
+    code = document.getElementById('codeInput').value || '';
+  }
+
+  if (!code.trim()) {
+    setStatus('Nothing to view', false);
+    return;
+  }
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    setStatus('Popup blocked. Allow popups to view HTML.', false);
+    return;
+  }
+
+  win.document.open();
+  win.document.write(code);
+  win.document.close();
+  setStatus('Opened rendered HTML in a new tab ✓', true);
+}
+
 function exportHTML() {
-  const code = document.getElementById('codeInput').value;
-  if (!code.trim()) { setStatus('Nothing to export', false); return; }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([code], { type: 'text/html' }));
-  a.download = 'edited-page.html';
-  a.click();
-  setStatus('Exported as edited-page.html ✓', true);
+  viewHTML();
 }
 
 function clearAll() {
@@ -1999,12 +3540,12 @@ function clearAll() {
   document.getElementById('canvasInner').className = 'canvas-inner';
   document.getElementById('mainToolbar').classList.remove('preview-mode');
   document.getElementById('canvasTopLabel').textContent = 'Live Canvas';
-  document.getElementById('btnPreviewMode').classList.add('active');
-  document.getElementById('btnEditMode').classList.remove('active');
-  const modeWrap = document.getElementById('modeToggleWrap');
-  modeWrap.style.opacity = '0.4';
-  modeWrap.style.pointerEvents = 'none';
-  modeWrap.setAttribute('data-tip', 'Render HTML first to switch modes');
+  const prevBtn = document.getElementById('btnPreviewMode');
+  const editBtn = document.getElementById('btnEditMode');
+  if (prevBtn) prevBtn.classList.add('active');
+  if (editBtn) editBtn.classList.remove('active');
+  const liveStatus = document.getElementById('liveEditStatus');
+  if (liveStatus) liveStatus.style.opacity = '0.55';
   iframeDoc = null;
   currentMode = 'preview';
   setStatus('Reset', false);
@@ -2579,8 +4120,11 @@ function runStandardsCheck() {
   const results = [];
 
   /* ── HELPER ── */
-  function add(cat, status, title, detail) {
-    results.push({ cat, status, title, detail });
+  function add(cat, status, title, detail, elementsOrTarget) {
+    let elements = null, target = null;
+    if (Array.isArray(elementsOrTarget)) elements = elementsOrTarget;
+    else if (elementsOrTarget && typeof elementsOrTarget === 'object') target = elementsOrTarget;
+    results.push({ cat, status, title, detail, elements, target });
   }
   function getComputedStyleProp(el, prop) {
     try { return doc.defaultView.getComputedStyle(el)[prop] || ''; } catch(e) { return ''; }
@@ -2590,7 +4134,7 @@ function runStandardsCheck() {
   /* ═══ 1. IMAGES — alt text ═══ */
   const imgs = [...body.querySelectorAll('img')];
   if (imgs.length === 0) {
-    add('Images', 'info', 'No images found', 'Add screenshots or diagrams to support the article.');
+    add('Images', 'info', 'No images found', 'Add screenshots or diagrams to support the article.', { type: 'missing-image', label: 'Add screenshot or diagram here' });
   } else {
     const noAlt = imgs.filter(i => !i.alt || !i.alt.trim());
     if (noAlt.length === 0) {
@@ -2607,7 +4151,7 @@ function runStandardsCheck() {
   /* ═══ 2. LINKS — descriptive text ═══ */
   const links = [...body.querySelectorAll('a[href]')];
   if (links.length === 0) {
-    add('Links', 'info', 'No links found', 'Consider adding internal/external references where helpful.');
+    add('Links', 'info', 'No links found', 'Consider adding internal/external references where helpful.', { type: 'missing-link', label: 'Add a helpful internal or external reference here' });
   } else {
     const badLinks = links.filter(a => {
       const t = a.textContent.trim().toLowerCase();
@@ -2723,8 +4267,8 @@ function runStandardsCheck() {
   /* ═══ 9. ARTICLE TITLE ═══ */
   const titleEls = [...body.querySelectorAll('h1, [style*="24pt"], [style*="20pt"]')];
   if (titleEls.length === 0) {
-    add('Structure', 'info', 'No article title (H1) found',
-      'Use a clear, action-oriented title in sentence case (e.g., "How to create a Knowledge Article").');
+    add('Structure', 'info', 'No H1 found in article body',
+      'D365 article titles are often managed outside the HTML content. If publishing outside D365, ensure a page-level H1 exists.', { type: 'missing-title', label: 'D365 title is usually outside article body' });
   } else {
     const title = titleEls[0].textContent.trim();
     const isAllCaps = title === title.toUpperCase() && title.length > 3;
@@ -2741,7 +4285,9 @@ function runStandardsCheck() {
   const passes = results.filter(r => r.status === 'pass').length;
   const fails  = results.filter(r => r.status === 'fail').length;
   const warns  = results.filter(r => r.status === 'warn').length;
-  const score  = Math.round((passes / results.length) * 100);
+  // Score rule: only failed items lower the score; info/warn are guidance only.
+  const failCountForScore = results.filter(r => r.status === 'fail').length;
+  const score  = results.length ? Math.round(((results.length - failCountForScore) / results.length) * 100) : 100;
   const scoreColor = score >= 80 ? '#107c10' : score >= 50 ? '#d47500' : '#c50f1f';
 
   let html = '';
@@ -2749,10 +4295,12 @@ function runStandardsCheck() {
     html += '<div class="std-section-label">' + cat + '</div>';
     results.filter(r => r.cat === cat).forEach((r, i) => {
       const icon = r.status === 'pass' ? '✓' : r.status === 'fail' ? '✗' : r.status === 'warn' ? '⚠' : 'ℹ';
-      const clickable = r.status === 'fail' && r.elements ? ' onclick="stdHighlight(' + results.indexOf(r) + ')"' : '';
-      html += '<div class="std-item ' + r.status + '"' + clickable + '>';
+      const isClickable = (r.elements && r.elements.length) || r.target;
+      const clickable = isClickable ? ' clickable onclick="stdHighlight(' + results.indexOf(r) + ')" title="Click to highlight the related area"' : '';
+      html += '<div class="std-item ' + r.status + (isClickable ? ' clickable' : '') + '"' + clickable + '>';
       html += '<span class="std-icon">' + icon + '</span>';
       html += '<span class="std-text"><strong>' + r.title + '</strong><span>' + r.detail + '</span></span>';
+      html += '<button type="button" class="std-help-btn" title="Why am I seeing this?" onclick="openContextHelp(\'kb\',' + results.indexOf(r) + ', event)">i</button>';
       html += '</div>';
     });
   });
@@ -2771,16 +4319,103 @@ function runStandardsCheck() {
 
 function stdHighlight(idx) {
   const r = window._stdResults && window._stdResults[idx];
-  if (!r || !r.elements || !iframeDoc) return;
-  r.elements.forEach((el, i) => {
-    const prev = el.style.outline;
-    el.style.outline = '2px solid #c50f1f';
-    el.style.outlineOffset = '2px';
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => { el.style.outline = prev || ''; el.style.outlineOffset = ''; }, 3000);
-  });
-}
+  if (!r || !iframeDoc) return;
 
+  const source = document.getElementById('codeInput');
+
+  function flashSourceNear(text) {
+    if (!source) return;
+    source.classList.add('std-source-flash');
+
+    const code = source.value || '';
+    let pos = 0;
+
+    if (text) {
+      const needle = String(text).trim().slice(0, 120);
+      if (needle) {
+        const found = code.indexOf(needle);
+        if (found >= 0) pos = found;
+      }
+    }
+
+    if (pos === 0) {
+      const bodyPos = code.toLowerCase().indexOf('<body');
+      pos = bodyPos >= 0 ? bodyPos : 0;
+    }
+
+    source.focus();
+    try {
+      source.setSelectionRange(pos, Math.min(code.length, pos + 140));
+    } catch(e) {}
+    setTimeout(() => source.classList.remove('std-source-flash'), 3200);
+  }
+
+  function ensureHighlightCSS(doc) {
+    if (doc.getElementById('kbStdHighlightStyle')) return;
+    const st = doc.createElement('style');
+    st.id = 'kbStdHighlightStyle';
+    st.textContent = `
+      .kb-std-highlight-target {
+        outline: 3px solid #0078d4 !important;
+        outline-offset: 3px !important;
+        background: rgba(0,120,212,.10) !important;
+        transition: outline .15s ease, background .15s ease;
+      }
+      .kb-std-missing-marker {
+        border: 2px dashed #0078d4;
+        background: #eef6ff;
+        color: #003b70;
+        font-family: Segoe UI, sans-serif;
+        font-size: 12pt;
+        padding: 10px 12px;
+        margin: 8px 0 14px 0;
+        border-radius: 4px;
+      }
+    `;
+    doc.head.appendChild(st);
+  }
+
+  function highlightElement(el) {
+    if (!el || !el.style) return;
+    ensureHighlightCSS(iframeDoc);
+    el.classList.add('kb-std-highlight-target');
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+    setTimeout(() => el.classList.remove('kb-std-highlight-target'), 3500);
+  }
+
+  if (r.elements && r.elements.length) {
+    r.elements.forEach((el, i) => {
+      highlightElement(el);
+      if (i === 0) flashSourceNear(el.outerHTML || el.textContent || '');
+    });
+    return;
+  }
+
+  // Absence-based standards such as "No images found" do not have a broken HTML element.
+  // Highlight the recommended insertion area instead.
+  if (r.target) {
+    ensureHighlightCSS(iframeDoc);
+    const doc = iframeDoc;
+    const marker = doc.createElement('div');
+    marker.className = 'kb-std-missing-marker kb-std-highlight-target';
+    marker.setAttribute('contenteditable', 'false');
+    marker.textContent = r.target.label || r.title;
+
+    let insertBefore = doc.body.firstElementChild;
+    if (r.target.type === 'missing-image' || r.target.type === 'missing-link') {
+      insertBefore = doc.body.querySelector('.collapsible_panel') || doc.body.firstElementChild;
+    }
+    if (r.target.type === 'missing-title') {
+      insertBefore = doc.body.firstElementChild;
+    }
+
+    doc.body.insertBefore(marker, insertBefore || null);
+    try { marker.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+    flashSourceNear('');
+    setStatus(r.title + ': suggested insertion area highlighted', true);
+    setTimeout(() => { try { marker.remove(); } catch(e) {} }, 3800);
+  }
+}
 function applyStandards() {
   if (!iframeDoc || currentMode !== 'edit') {
     setStatus('Switch to Edit mode first, then Auto-Fix Standards', false);
@@ -2832,6 +4467,713 @@ function applyStandards() {
   setTimeout(() => runStandardsCheck(), 400);
 }
 
+
+
+/* ══════════════════════════════════════
+   MAS / MICROSOFT ACCESSIBILITY CHECK
+══════════════════════════════════════ */
+function toggleAccessibility() {
+  const panel = document.getElementById('accessibilityPanel');
+  const btn   = document.getElementById('btnAccessibility');
+  const stdPanel = document.getElementById('standardsPanel');
+  const stdBtn = document.getElementById('btnStandards');
+  if (!panel || !btn) return;
+
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    btn.classList.remove('active');
+  } else {
+    if (stdPanel) stdPanel.classList.remove('open');
+    if (stdBtn) stdBtn.classList.remove('active');
+    panel.classList.add('open');
+    btn.classList.add('active');
+    if (iframeDoc) runAccessibilityCheck();
+  }
+}
+
+function runAccessibilityCheck() {
+  const bodyEl = document.getElementById('accessibilityBody');
+  if (!iframeDoc || !iframeDoc.body) {
+    if (bodyEl) bodyEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:20px 8px;text-align:center">Render HTML first to run MAS Accessibility Check.</div>';
+    return;
+  }
+
+  const doc = iframeDoc;
+  const body = doc.body;
+  const results = [];
+
+  function add(cat, status, title, detail, elementsOrTarget) {
+    let elements = null, target = null;
+    if (Array.isArray(elementsOrTarget)) elements = elementsOrTarget;
+    else if (elementsOrTarget && typeof elementsOrTarget === 'object') target = elementsOrTarget;
+    results.push({ cat, status, title, detail, elements, target });
+  }
+
+  function css(el, prop) {
+    try { return doc.defaultView.getComputedStyle(el)[prop] || ''; } catch(e) { return ''; }
+  }
+  function parseRGB(v) {
+    const m = String(v).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    return m ? [parseInt(m[1],10), parseInt(m[2],10), parseInt(m[3],10)] : null;
+  }
+  function luminance(rgb) {
+    if (!rgb) return null;
+    const s = rgb.map(v => {
+      v = v / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+  }
+  function contrastRatio(fg, bg) {
+    const L1 = luminance(fg), L2 = luminance(bg);
+    if (L1 === null || L2 === null) return null;
+    const hi = Math.max(L1, L2), lo = Math.min(L1, L2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function visibleText(el) {
+    return (el.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
+  /* IMAGES */
+  const imgs = [...body.querySelectorAll('img')];
+  if (imgs.length === 0) {
+    add('Images', 'info', 'No images found', 'No image accessibility issues detected because the article has no images.', { type: 'missing-image', label: 'Recommended image placement area' });
+  } else {
+    const missingAlt = imgs.filter(img => !img.hasAttribute('alt'));
+    const emptyAlt = imgs.filter(img => img.hasAttribute('alt') && img.getAttribute('alt').trim() === '');
+    if (missingAlt.length) add('Images', 'fail', 'Images missing alt text', missingAlt.length + ' image(s) need meaningful alternative text or alt="" if decorative.', missingAlt);
+    if (emptyAlt.length) add('Images', 'warn', 'Images marked decorative', emptyAlt.length + ' image(s) have empty alt text. Confirm they are decorative only.', emptyAlt);
+    if (!missingAlt.length && !emptyAlt.length) add('Images', 'pass', 'Image alt text present', 'All images include alt text ✓');
+  }
+
+  /* LINKS */
+  const links = [...body.querySelectorAll('a')];
+  if (links.length === 0) {
+    add('Links', 'info', 'No links found', 'No link accessibility issues detected because the article has no links.');
+  } else {
+    const badHref = links.filter(a => !a.getAttribute('href') || a.getAttribute('href') === '#');
+    const vague = links.filter(a => /^(click here|here|learn more|read more|link|this)$/i.test(visibleText(a)));
+    const empty = links.filter(a => !visibleText(a));
+    if (badHref.length) add('Links', 'fail', 'Links missing valid destination', badHref.length + ' link(s) have empty, missing, or placeholder href values.', badHref);
+    if (empty.length) add('Links', 'fail', 'Empty link text', empty.length + ' link(s) have no accessible visible text.', empty);
+    if (vague.length) add('Links', 'warn', 'Vague link text found', 'Use descriptive text instead of “click here”, “here”, or “learn more”.', vague);
+    if (!badHref.length && !empty.length && !vague.length) add('Links', 'pass', 'Links are descriptive', 'All links have usable text and destinations ✓');
+  }
+
+  /* HEADINGS */
+  const headings = [...body.querySelectorAll('h1,h2,h3,h4,h5,h6')];
+  if (!headings.length) {
+    add('Headings', 'warn', 'No semantic headings found', 'Use H1/H2/H3 headings for screen-reader navigation. Visual styled text is not enough.', { type: 'missing-heading', label: 'Add semantic heading structure near the top' });
+  } else {
+    const emptyHeadings = headings.filter(h => !visibleText(h));
+    const h1s = headings.filter(h => h.tagName === 'H1');
+    const skipped = [];
+    let prev = 0;
+    headings.forEach(h => {
+      const lvl = parseInt(h.tagName.substring(1), 10);
+      if (prev && lvl > prev + 1) skipped.push(h);
+      prev = lvl;
+    });
+    if (h1s.length === 0) add('Headings', 'info', 'No H1 found in article body', 'D365 article titles are often managed outside the HTML content. If publishing outside D365, ensure a page-level H1 exists.', { type: 'missing-title', label: 'D365 title is usually outside article body' });
+    if (h1s.length > 1) add('Headings', 'warn', 'Multiple H1 headings found', 'Use only one H1 per article. Use H2/H3 for sections.', h1s.slice(1));
+    if (emptyHeadings.length) add('Headings', 'fail', 'Empty headings found', emptyHeadings.length + ' heading(s) have no text.', emptyHeadings);
+    if (skipped.length) add('Headings', 'warn', 'Skipped heading levels', 'Avoid jumping heading levels, such as H2 to H4.', skipped);
+    if (!emptyHeadings.length && !skipped.length && h1s.length === 1) add('Headings', 'pass', 'Heading structure looks valid', 'Semantic heading structure is usable ✓');
+  }
+
+  /* TABLES */
+  const tables = [...body.querySelectorAll('table')];
+  if (!tables.length) {
+    add('Tables', 'info', 'No tables found', 'No table accessibility issues detected because the article has no tables.');
+  } else {
+    const noHeaders = tables.filter(t => !t.querySelector('th'));
+    const noCaption = tables.filter(t => !t.querySelector('caption'));
+    if (noHeaders.length) add('Tables', 'fail', 'Tables missing header cells', noHeaders.length + ' table(s) need <th> header cells for screen readers.', noHeaders);
+    if (noCaption.length) add('Tables', 'warn', 'Tables missing captions', 'Add a short caption when the table purpose is not clear from surrounding text.', noCaption);
+    if (!noHeaders.length && !noCaption.length) add('Tables', 'pass', 'Tables include headers and captions', 'Table structure looks accessible ✓');
+  }
+
+  /* FORMS / INTERACTIVE */
+  const controls = [...body.querySelectorAll('input,select,textarea')];
+  const unlabeled = controls.filter(c => {
+    const id = c.getAttribute('id');
+    return !(c.getAttribute('aria-label') || c.getAttribute('aria-labelledby') || (id && body.querySelector('label[for="' + CSS.escape(id) + '"]')));
+  });
+  if (unlabeled.length) add('Forms', 'fail', 'Form controls missing labels', unlabeled.length + ' control(s) need a label, aria-label, or aria-labelledby.', unlabeled);
+  else if (controls.length) add('Forms', 'pass', 'Form labels found', 'All form controls appear labeled ✓');
+
+  const collapsibleHeads = [...body.querySelectorAll('.collapsible_panel_head')];
+  const badCollapsibles = collapsibleHeads.filter(h => !h.hasAttribute('tabindex') && h.tagName !== 'BUTTON');
+  if (badCollapsibles.length) add('Interactive', 'warn', 'Collapsibles may not be keyboard accessible', 'Clickable collapsible headers should be reachable by keyboard.', badCollapsibles);
+  else if (collapsibleHeads.length) add('Interactive', 'pass', 'Collapsibles keyboard check', 'Collapsible headers are keyboard reachable ✓');
+
+  /* COLOR CONTRAST */
+  const textEls = [...body.querySelectorAll('p,li,span,a,h1,h2,h3,h4,h5,h6,td,th')]
+    .filter(el => visibleText(el).length > 0 && css(el, 'display') !== 'none' && css(el, 'visibility') !== 'hidden');
+  const lowContrast = [];
+  textEls.slice(0, 250).forEach(el => {
+    const fg = parseRGB(css(el, 'color'));
+    let bg = parseRGB(css(el, 'backgroundColor'));
+    let p = el.parentElement;
+    while ((!bg || /rgba\(0,\s*0,\s*0,\s*0\)/i.test(css(p || el, 'backgroundColor'))) && p && p !== body) {
+      bg = parseRGB(css(p, 'backgroundColor'));
+      p = p.parentElement;
+    }
+    if (!bg) bg = [255,255,255];
+    const ratio = contrastRatio(fg, bg);
+    if (ratio !== null && ratio < 4.5) lowContrast.push(el);
+  });
+  if (lowContrast.length) add('Color', 'warn', 'Possible low color contrast', lowContrast.length + ' text element(s) may be below 4.5:1 contrast. Verify visually.', lowContrast.slice(0, 10));
+  else add('Color', 'pass', 'Text contrast check passed', 'No obvious low-contrast text found ✓');
+
+  /* STRUCTURE */
+  const emptyParas = [...body.querySelectorAll('p')].filter(p => !visibleText(p) && !p.querySelector('img,video,iframe'));
+  if (emptyParas.length > 5) add('Structure', 'warn', 'Many empty paragraphs found', emptyParas.length + ' empty paragraph(s) can create noisy screen-reader navigation.', emptyParas.slice(0, 10));
+  else add('Structure', 'pass', 'Empty paragraph check', 'No excessive empty paragraphs detected ✓');
+
+  const pageTitle = (doc.querySelector('title') || {}).textContent || '';
+  if (!pageTitle.trim()) add('Structure', 'info', 'No document title found', 'Add a meaningful <title> when publishing this as a standalone HTML page.');
+  else add('Structure', 'pass', 'Document title found', pageTitle.trim().slice(0, 60) + ' ✓');
+
+  renderAccessibilityResults(results);
+}
+
+function renderAccessibilityResults(results) {
+  const bodyEl = document.getElementById('accessibilityBody');
+  const summary = document.getElementById('accessibilitySummary');
+  if (!bodyEl) return;
+
+  const cats = [...new Set(results.map(r => r.cat))];
+  const passes = results.filter(r => r.status === 'pass').length;
+  const fails  = results.filter(r => r.status === 'fail').length;
+  const warns  = results.filter(r => r.status === 'warn').length;
+  // Score rule: only failed items lower the score; info/warn are guidance only.
+  const failCountForScore = results.filter(r => r.status === 'fail').length;
+  const score  = results.length ? Math.round(((results.length - failCountForScore) / results.length) * 100) : 100;
+  const scoreColor = score >= 80 ? '#107c10' : score >= 50 ? '#d47500' : '#c50f1f';
+
+  let html = '';
+  cats.forEach(cat => {
+    html += '<div class="std-section-label">' + cat + '</div>';
+    results.filter(r => r.cat === cat).forEach(r => {
+      const icon = r.status === 'pass' ? '✓' : r.status === 'fail' ? '✗' : r.status === 'warn' ? '⚠' : 'ℹ';
+      const isClickable = (r.elements && r.elements.length) || r.target;
+      const idx = results.indexOf(r);
+      const clickable = isClickable ? ' onclick="masHighlight(' + idx + ')" title="Click to highlight the related area"' : '';
+      html += '<div class="std-item ' + r.status + (isClickable ? ' clickable' : '') + '"' + clickable + '>';
+      html += '<span class="std-icon">' + icon + '</span>';
+      html += '<span class="std-text"><strong>' + r.title + '</strong><span>' + r.detail + '</span></span>';
+      html += '<button type="button" class="std-help-btn" title="Why am I seeing this?" onclick="openContextHelp(\'mas\',' + idx + ', event)">i</button>';
+      html += '</div>';
+    });
+  });
+  bodyEl.innerHTML = html || '<div style="color:var(--text-dim);font-size:12px;padding:20px 8px;text-align:center">No accessibility results.</div>';
+  if (summary) summary.style.display = 'block';
+  const scoreLabel = document.getElementById('masScoreLabel');
+  const scoreValue = document.getElementById('masScoreValue');
+  const scoreFill = document.getElementById('masScoreFill');
+  if (scoreLabel) scoreLabel.textContent = passes + ' passed · ' + fails + ' failed · ' + warns + ' warnings';
+  if (scoreValue) { scoreValue.textContent = score + '%'; scoreValue.style.color = scoreColor; }
+  if (scoreFill) { scoreFill.style.width = score + '%'; scoreFill.style.background = scoreColor; }
+  window._masResults = results;
+}
+
+function masHighlight(idx) {
+  const r = window._masResults && window._masResults[idx];
+  if (!r || !iframeDoc) return;
+
+  const source = document.getElementById('codeInput');
+  function ensureCSS(doc) {
+    if (doc.getElementById('kbStdHighlightStyle')) return;
+    const st = doc.createElement('style');
+    st.id = 'kbStdHighlightStyle';
+    st.textContent = `
+      .kb-std-highlight-target {
+        outline: 3px solid #0078d4 !important;
+        outline-offset: 3px !important;
+        background: rgba(0,120,212,.10) !important;
+        transition: outline .15s ease, background .15s ease;
+      }
+      .kb-std-missing-marker {
+        border: 2px dashed #0078d4;
+        background: #eef6ff;
+        color: #003b70;
+        font-family: Segoe UI, sans-serif;
+        font-size: 12pt;
+        padding: 10px 12px;
+        margin: 8px 0 14px 0;
+        border-radius: 4px;
+      }
+    `;
+    doc.head.appendChild(st);
+  }
+  function flashSourceNear(text) {
+    if (!source) return;
+    source.classList.add('std-source-flash');
+    const code = source.value || '';
+    let pos = 0;
+    const needle = String(text || '').trim().slice(0, 120);
+    if (needle) {
+      const found = code.indexOf(needle);
+      if (found >= 0) pos = found;
+    }
+    source.focus();
+    try { source.setSelectionRange(pos, Math.min(code.length, pos + 140)); } catch(e) {}
+    setTimeout(() => source.classList.remove('std-source-flash'), 3200);
+  }
+  function highlightElement(el) {
+    if (!el || !el.style) return;
+    ensureCSS(iframeDoc);
+    el.classList.add('kb-std-highlight-target');
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+    setTimeout(() => el.classList.remove('kb-std-highlight-target'), 3500);
+  }
+
+  if (r.elements && r.elements.length) {
+    r.elements.forEach((el, i) => {
+      highlightElement(el);
+      if (i === 0) flashSourceNear(el.outerHTML || el.textContent || '');
+    });
+    return;
+  }
+
+  if (r.target) {
+    ensureCSS(iframeDoc);
+    const marker = iframeDoc.createElement('div');
+    marker.className = 'kb-std-missing-marker kb-std-highlight-target';
+    marker.setAttribute('contenteditable', 'false');
+    marker.textContent = r.target.label || r.title;
+    iframeDoc.body.insertBefore(marker, iframeDoc.body.firstElementChild || null);
+    try { marker.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e) {}
+    flashSourceNear('');
+    setStatus(r.title + ': suggested area highlighted', true);
+    setTimeout(() => { try { marker.remove(); } catch(e) {} }, 3800);
+  }
+}
+
+function applyAccessibilityFixes() {
+  if (!iframeDoc || currentMode !== 'edit') {
+    setStatus('Switch to Edit mode first, then Auto-Fix Accessibility', false);
+    return;
+  }
+  const doc = iframeDoc;
+  const body = doc.body;
+  let fixed = 0;
+
+  [...body.querySelectorAll('img:not([alt])')].forEach(img => {
+    img.setAttribute('alt', '[Describe this image]');
+    fixed++;
+  });
+
+  [...body.querySelectorAll('a')].forEach(a => {
+    const txt = (a.textContent || '').trim();
+    if (!a.getAttribute('href')) { a.setAttribute('href', '#'); fixed++; }
+    if (/^(click here|here|learn more|read more|link|this)$/i.test(txt)) {
+      a.textContent = 'Descriptive link text required';
+      fixed++;
+    }
+  });
+
+  [...body.querySelectorAll('.collapsible_panel_head')].forEach(h => {
+    if (!h.hasAttribute('tabindex')) { h.setAttribute('tabindex', '0'); fixed++; }
+    if (!h.hasAttribute('role')) { h.setAttribute('role', 'button'); fixed++; }
+  });
+
+  [...body.querySelectorAll('table')].forEach(t => {
+    if (!t.querySelector('th')) {
+      const firstRow = t.querySelector('tr');
+      if (firstRow) {
+        [...firstRow.children].forEach(cell => {
+          if (cell.tagName === 'TD') {
+            const th = doc.createElement('th');
+            th.innerHTML = cell.innerHTML;
+            [...cell.attributes].forEach(attr => th.setAttribute(attr.name, attr.value));
+            cell.replaceWith(th);
+            fixed++;
+          }
+        });
+      }
+    }
+  });
+
+  // MAS auto-fix: if the article has no semantic headings, convert visually styled KB titles to H2.
+  // D365 stores the article title outside the HTML body, so this intentionally does NOT create an H1.
+  if (!body.querySelector('h1,h2,h3,h4,h5,h6')) {
+    const headingStyle = 'margin:0;color:#243a5e;font-family:&quot;Segoe UI Semibold&quot;,&quot;Segoe UI&quot;,Helvetica,sans-serif;font-size:14pt;font-weight:600;line-height:1.25;';
+
+    function textOf(el) {
+      return (el.textContent || '').replace(/\s+/g, ' ').trim();
+    }
+    function isGoodHeadingText(txt) {
+      if (!txt || txt.length > 140) return false;
+      if (/^(note|warning|example|tip)\b/i.test(txt)) return false;
+      if (/[.!?]$/.test(txt) && txt.split(/\s+/).length > 8) return false;
+      return /^(introduction|overview|process overview|step[- ]?by[- ]?step|additional information|tips|best practices|need help|section\s+\d+|optional)/i.test(txt) || txt.split(/\s+/).length <= 10;
+    }
+    function makeH2(txt) {
+      const h2 = doc.createElement('h2');
+      h2.setAttribute('style', headingStyle);
+      h2.textContent = txt;
+      return h2;
+    }
+
+    // Convert collapsible header titles into semantic H2 while preserving the collapsible structure.
+    [...body.querySelectorAll('.collapsible_panel_title')].forEach(title => {
+      if (title.querySelector('h1,h2,h3,h4,h5,h6')) return;
+      const txt = textOf(title);
+      if (!isGoodHeadingText(txt)) return;
+      title.innerHTML = '';
+      title.appendChild(makeH2(txt));
+      fixed++;
+    });
+
+    // Convert common standalone section titles, such as Introduction, into H2.
+    [...body.querySelectorAll('p')].forEach(p => {
+      if (!p.isConnected || p.closest('.collapsible_panel_title')) return;
+      if (p.querySelector('h1,h2,h3,h4,h5,h6')) return;
+      const txt = textOf(p);
+      if (!isGoodHeadingText(txt)) return;
+      const span = p.querySelector('span');
+      const styleText = ((span && span.getAttribute('style')) || p.getAttribute('style') || '').toLowerCase();
+      const looksStyled = txt.toLowerCase() === 'introduction' || styleText.includes('243a5e') || styleText.includes('36,58,94') || styleText.includes('14pt') || styleText.includes('semibold');
+      if (!looksStyled) return;
+      p.replaceWith(makeH2(txt));
+      fixed++;
+    });
+  }
+
+  syncCode(true);
+  setStatus('Accessibility auto-fix applied: ' + fixed + ' update(s)', true);
+  setTimeout(() => runAccessibilityCheck(), 400);
+}
+
+
+
+/* ══════════════════════════════════════
+   UX IMPROVEMENTS LOGIC
+══════════════════════════════════════ */
+let _uxActiveIssueIndex = -1;
+let _uxFlatIssues = [];
+
+let _contextHelpCurrent = null;
+function escapeHelpHtml(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function guidelineForIssue(source, issue) {
+  const title = (issue && issue.title || '').toLowerCase();
+  const cat = (issue && issue.cat || '').toLowerCase();
+  const isMAS = source === 'mas';
+  const guide = {
+    why: 'This item was detected by the checker based on the current rendered article HTML.',
+    guideline: isMAS ? 'Follow Microsoft Accessibility Standards so content works for keyboard users, screen readers, and users with low vision.' : 'Follow KB authoring standards so articles are consistent, readable, and easy to maintain in D365.',
+    fix: 'Review the highlighted area, then update the content or use the available auto-fix when appropriate.',
+    tips: []
+  };
+
+  if (title.includes('no images')) {
+    guide.why = isMAS ? 'The article has no images, so there are no image accessibility issues to validate.' : 'KB guidance recommends screenshots or diagrams when they help users complete a process.';
+    guide.guideline = isMAS ? 'When images are added, they must have meaningful alt text unless they are purely decorative.' : 'Use images only when they clarify steps, UI locations, decisions, or expected outcomes.';
+    guide.fix = 'Add a relevant screenshot or diagram if it improves understanding. After adding it, click the image and provide alt text.';
+    guide.tips = ['Use clear, cropped screenshots.', 'Avoid adding decorative images that do not support the task.', 'For D365/KB screenshots, include enough context to orient the reader.'];
+  } else if (title.includes('alt text') || title.includes('decorative')) {
+    guide.why = 'One or more images either do not have alt text or are marked decorative.';
+    guide.guideline = 'MAS requires meaningful alternative text for informative images. Decorative images may use empty alt text.';
+    guide.fix = 'Click the image in the preview and use the Alt Text toolbar to describe the purpose of the image.';
+    guide.tips = ['Describe the information the image communicates, not every visual detail.', 'Avoid phrases like “image of” or “screenshot of” unless needed.', 'Use alt="" only for decorative images.'];
+  } else if (title.includes('no links')) {
+    guide.why = 'The article does not include any internal or external references.';
+    guide.guideline = isMAS ? 'Links are not required, but when used they should be descriptive and accessible.' : 'KB articles should include references when they help users find related processes, tools, or escalation paths.';
+    guide.fix = 'Add a useful related article, tool link, source reference, or support path if applicable.';
+    guide.tips = ['Do not add unnecessary links just to satisfy the checker.', 'Use descriptive link text, not “click here”.'];
+  } else if (title.includes('link')) {
+    guide.why = 'A link appears to be empty, vague, or missing a valid destination.';
+    guide.guideline = 'MAS requires link text to make sense out of context for screen-reader users.';
+    guide.fix = 'Update the link text to describe the destination or action, and verify the href is valid.';
+    guide.tips = ['Use “Open the escalation guide” instead of “click here”.', 'Avoid raw URLs as visible link text.'];
+  } else if (title.includes('semantic heading') || title.includes('heading structure') || title.includes('skipped heading') || title.includes('no h1')) {
+    guide.why = title.includes('no h1') ? 'No H1 was found inside the article body.' : 'The checker did not find semantic heading tags, or it found a heading hierarchy issue.';
+    guide.guideline = 'MAS expects semantic headings so screen-reader users can navigate sections. For D365 KB articles, the article title is often managed outside the HTML body, so missing H1 is informational only.';
+    guide.fix = title.includes('semantic') ? 'Use Auto-Fix Accessibility to convert Introduction and section-style titles into H2 headings.' : 'Use H2 for major article sections and H3 for nested subsections. Do not skip from H2 to H4.';
+    guide.tips = ['D365 title can remain outside the article HTML.', 'Use H2 for Introduction and major sections.', 'Use H3 only for subsections under an H2.'];
+  } else if (title.includes('font')) {
+    guide.why = 'One or more text elements may be using a non-standard font.';
+    guide.guideline = 'KB formatting uses Segoe UI for body text and Segoe UI Semibold for section headings.';
+    guide.fix = 'Select the affected text and apply Segoe UI from the toolbar, or run Auto-Fix Standards.';
+    guide.tips = ['Body text should be Segoe UI 12pt.', 'Section headings should be Segoe UI Semibold 14pt in #243a5e.'];
+  } else if (title.includes('heading color') || title.includes('standard color')) {
+    guide.why = 'Section heading styling may not match the KB template.';
+    guide.guideline = 'KB section headings should use Segoe UI Semibold, 14pt, and #243a5e.';
+    guide.fix = 'Select the heading and set font, size, and color using the toolbar or hex color input.';
+    guide.tips = ['Use #243a5e for KB strong blue.', 'Avoid using color alone for meaning.'];
+  } else if (title.includes('body text')) {
+    guide.why = 'The checker is validating whether normal paragraph text matches the KB body standard.';
+    guide.guideline = 'Body content should generally use Segoe UI, 12pt, regular weight, left aligned.';
+    guide.fix = 'Select non-standard text and apply Segoe UI 12pt from the toolbar.';
+  } else if (title.includes('contrast')) {
+    guide.why = 'Some text may not have enough contrast against its background.';
+    guide.guideline = 'MAS generally expects normal text to meet at least 4.5:1 contrast.';
+    guide.fix = 'Adjust the text or background color. Use strong KB blue #243a5e or black for normal text when possible.';
+    guide.tips = ['Avoid light gray text on white backgrounds.', 'Do not rely on color alone to communicate status.'];
+  } else if (title.includes('table')) {
+    guide.why = 'A table may be missing header cells or a caption.';
+    guide.guideline = 'Accessible tables need header cells so screen readers can associate data with its labels.';
+    guide.fix = 'Use <th> for the first row or column, and add a caption when the purpose is not clear.';
+  } else if (title.includes('alignment')) {
+    guide.why = 'The checker found centered or right-aligned body text, or confirmed that text is left-aligned.';
+    guide.guideline = 'KB body content should be left-aligned for readability and consistency.';
+    guide.fix = 'Select the affected text and use Align Left from the toolbar.';
+  } else if (title.includes('list')) {
+    guide.why = 'The checker is validating list depth and nesting.';
+    guide.guideline = 'KB articles should avoid deeply nested lists because they are harder to scan and navigate.';
+    guide.fix = 'Keep list nesting to two levels where possible. Break complex lists into sections or collapsibles.';
+  } else if (title.includes('empty paragraph')) {
+    guide.why = 'Many blank paragraphs can create unnecessary stops for screen readers.';
+    guide.guideline = 'Use CSS spacing or clean paragraph structure instead of repeated blank lines.';
+    guide.fix = 'Remove unnecessary blank paragraphs.';
+  } else if (title.includes('collapsible')) {
+    guide.why = 'One or more collapsible headers may not be reachable by keyboard.';
+    guide.guideline = 'MAS requires interactive elements to be keyboard accessible.';
+    guide.fix = 'Run Auto-Fix Accessibility to add tabindex and role attributes to collapsible headers.';
+  } else if (cat.includes('structure') || title.includes('title')) {
+    guide.why = 'The checker is validating article structure and metadata.';
+    guide.guideline = 'D365 may manage some metadata, such as the article title, outside the HTML body.';
+    guide.fix = 'Verify the D365 record title is correct. Only add an in-body heading if your publishing target requires it.';
+  }
+  return guide;
+}
+function openContextHelp(source, idx, event) {
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  const list = source === 'mas' ? (window._masResults || []) : (window._stdResults || []);
+  const issue = list[idx];
+  if (!issue) return;
+  _contextHelpCurrent = { source, idx };
+  const guide = guidelineForIssue(source, issue);
+  const titleEl = document.getElementById('contextHelpTitle');
+  const subEl = document.getElementById('contextHelpSub');
+  const bodyEl = document.getElementById('contextHelpBody');
+  const highlightBtn = document.getElementById('contextHelpHighlightBtn');
+  if (titleEl) titleEl.textContent = issue.title;
+  if (subEl) subEl.textContent = (source === 'mas' ? 'MAS Accessibility guidance' : 'KB Standards guidance') + ' • ' + issue.cat;
+  if (bodyEl) {
+    let tips = (guide.tips || []).map(t => '<li>' + escapeHelpHtml(t) + '</li>').join('');
+    bodyEl.innerHTML =
+      '<div class="context-help-section"><h4>Why am I seeing this?</h4><p>' + escapeHelpHtml(guide.why) + '</p></div>' +
+      '<div class="context-help-section"><h4>Guideline</h4><p>' + escapeHelpHtml(guide.guideline) + '</p></div>' +
+      '<div class="context-help-section"><h4>Recommended action</h4><p>' + escapeHelpHtml(guide.fix) + '</p></div>' +
+      (tips ? '<div class="context-help-section"><h4>Tips</h4><ul>' + tips + '</ul></div>' : '');
+  }
+  if (highlightBtn) {
+    const canHighlight = (issue.elements && issue.elements.length) || issue.target;
+    highlightBtn.style.display = canHighlight ? '' : 'none';
+  }
+  const backdrop = document.getElementById('contextHelpBackdrop');
+  if (backdrop) backdrop.classList.add('open');
+}
+function closeContextHelp() {
+  const backdrop = document.getElementById('contextHelpBackdrop');
+  if (backdrop) backdrop.classList.remove('open');
+}
+function contextHelpHighlightIssue() {
+  if (!_contextHelpCurrent) return;
+  if (_contextHelpCurrent.source === 'mas') masHighlight(_contextHelpCurrent.idx);
+  else stdHighlight(_contextHelpCurrent.idx);
+}
+
+
+function uxGoStep(step){
+  document.querySelectorAll('.ux-step').forEach(b=>b.classList.toggle('active', b.dataset.step===step));
+  if(step==='author'){
+    try{ setMode('edit'); }catch(e){}
+    document.getElementById('codeInput')?.focus();
+    setStatus('Author mode: edit content and formatting', true);
+  }
+  if(step==='review'){
+    try{ setMode('preview'); }catch(e){}
+    setStatus('Review mode: preview the article before validation', true);
+  }
+  if(step==='validate'){
+    toggleQualityCenter(true);
+    uxRunQualityCenter();
+  }
+  if(step==='publish'){
+    toggleQualityCenter(true);
+    uxRunQualityCenter();
+    setStatus('Publish step: review readiness, then Copy HTML or View HTML', true);
+  }
+}
+
+function toggleQualityCenter(force){
+  const p=document.getElementById('qualityCenterPanel');
+  if(!p) return;
+  const open = typeof force==='boolean' ? force : !p.classList.contains('open');
+  p.classList.toggle('open', open);
+  if(open && iframeDoc) uxRunQualityCenter();
+}
+
+function uxRunQualityCenter(){
+  if(!iframeDoc || !iframeDoc.body){
+    document.getElementById('qualityCenterBody').innerHTML='<div class="qc-empty">Render HTML first, then run Quality Center.</div>';
+    setStatus('Render HTML first to run Quality Center', false);
+    return;
+  }
+  try{ runStandardsCheck(); }catch(e){ console.warn(e); }
+  try{ runAccessibilityCheck(); }catch(e){ console.warn(e); }
+  setTimeout(renderQualityCenter, 50);
+}
+
+function renderQualityCenter(){
+  const std=(window._stdResults||[]).map((r,i)=>({...r,source:'KB Standards',_idx:i,_type:'std'}));
+  const mas=(window._masResults||[]).map((r,i)=>({...r,source:'MAS Accessibility',_idx:i,_type:'mas'}));
+  const all=[...std,...mas];
+  const passes=all.filter(r=>r.status==='pass').length;
+  const infos=all.filter(r=>r.status==='info').length;
+  const warns=all.filter(r=>r.status==='warn').length;
+  const fails=all.filter(r=>r.status==='fail').length;
+  // Publish Readiness: only FAILED items reduce the score.
+  // PASS, INFO, and WARN do not apply any penalty.
+  const weighted = all.length ? Math.max(0, Math.round(((all.length - fails) / all.length) * 100)) : 100;
+  _uxFlatIssues=all.filter(r=>r.status!=='pass');
+  document.getElementById('qcPassCount').textContent=passes;
+  document.getElementById('qcInfoCount').textContent=infos;
+  document.getElementById('qcWarnCount').textContent=warns;
+  document.getElementById('qcFailCount').textContent=fails;
+  document.getElementById('qcScoreValue').textContent=weighted+'%';
+  document.getElementById('qcScoreFill').style.width=weighted+'%';
+  const stat=document.getElementById('uxQualityStat');
+  if(stat){
+    const dot=stat.querySelector('.ux-score-dot');
+    dot.className='ux-score-dot '+(weighted>=85?'good':weighted>=65?'warn':'bad');
+    stat.querySelector('span:last-child').textContent='Quality '+weighted+'% · '+fails+' fail · '+warns+' warn';
+  }
+  const body=document.getElementById('qualityCenterBody');
+  if(!_uxFlatIssues.length){
+    body.innerHTML='<div class="qc-empty">Great work — no open issues found. Review the original check panels for detailed pass records.</div>';
+    return;
+  }
+  const grouped={};
+  _uxFlatIssues.forEach(r=>{ (grouped[r.source] ||= []).push(r); });
+  let html='';
+  Object.keys(grouped).forEach(src=>{
+    html+='<div class="qc-section-title">'+src+'</div>';
+    grouped[src].forEach((r)=>{
+      const idx=_uxFlatIssues.indexOf(r);
+      const icon=r.status==='fail'?'✕':r.status==='warn'?'⚠':'ℹ';
+      html+='<div class="qc-issue '+r.status+'" onclick="uxOpenIssue('+idx+')">';
+      html+='<div class="qc-issue-icon">'+icon+'</div><div class="qc-issue-text"><strong>'+r.title+'</strong><span>'+r.detail+'</span></div></div>';
+    });
+  });
+  body.innerHTML=html;
+}
+
+function uxOpenIssue(idx){
+  const r=_uxFlatIssues[idx];
+  if(!r) return;
+  _uxActiveIssueIndex=idx;
+  if(r._type==='std') stdHighlight(r._idx);
+  if(r._type==='mas') masHighlight(r._idx);
+  setStatus((r.source||'Quality')+': '+r.title, true);
+}
+function uxNavigateIssue(delta){
+  if(!_uxFlatIssues.length){ uxRunQualityCenter(); return; }
+  _uxActiveIssueIndex = (_uxActiveIssueIndex + delta + _uxFlatIssues.length) % _uxFlatIssues.length;
+  uxOpenIssue(_uxActiveIssueIndex);
+}
+function uxInsertImagePlaceholder(){
+  if(!iframeDoc || !iframeDoc.body) return;
+  const html='<p style="margin:12px 0;"><img src="" alt="Describe this image" style="max-width:100%;border:1px dashed #8bb7ff;padding:12px;background:#f0f7ff;min-height:48px;" /></p>';
+  try{ setMode('edit'); }catch(e){}
+  try{ iframeDoc.execCommand('insertHTML', false, html); }catch(e){ iframeDoc.body.insertAdjacentHTML('beforeend', html); }
+  syncCode(true); setStatus('Image placeholder inserted — click it to add alt text', true); uxRunQualityCenter();
+}
+function uxInsertLinkPlaceholder(){
+  if(!iframeDoc || !iframeDoc.body) return;
+  try{ setMode('edit'); }catch(e){}
+  const html='<a href="#" target="_blank">Descriptive link text</a>';
+  try{ iframeDoc.execCommand('insertHTML', false, html); }catch(e){ iframeDoc.body.insertAdjacentHTML('beforeend','<p>'+html+'</p>'); }
+  syncCode(true); setStatus('Link placeholder inserted', true); uxRunQualityCenter();
+}
+
+const UX_COMMANDS=[
+  {name:'Add Collapsible Section',hint:'Ctrl+Shift+C',icon:'▸',run:()=>addCollapsible&&addCollapsible()},
+  {name:'Run Quality Center',hint:'Validate',icon:'✓',run:()=>{toggleQualityCenter(true);uxRunQualityCenter();}},
+  {name:'Run KB Standards Check',hint:'KB',icon:'K',run:()=>toggleStandards&&toggleStandards()},
+  {name:'Run MAS Accessibility Check',hint:'MAS',icon:'♿',run:()=>toggleAccessibility&&toggleAccessibility()},
+  {name:'Insert Image Placeholder',hint:'Fix',icon:'🖼',run:()=>uxInsertImagePlaceholder()},
+  {name:'Insert Link Placeholder',hint:'Fix',icon:'🔗',run:()=>uxInsertLinkPlaceholder()},
+  {name:'View HTML in New Tab',hint:'Preview',icon:'↗',run:()=>viewHTML&&viewHTML()},
+  {name:'Copy HTML',hint:'Ctrl+Shift+C',icon:'⧉',run:()=>copyHTML&&copyHTML()},
+  {name:'Find & Replace',hint:'Ctrl+H',icon:'⌕',run:()=>toggleFnR&&toggleFnR()}
+];
+let _uxCmdActive=0;
+function toggleCommandPalette(force){
+  const b=document.getElementById('commandPaletteBackdrop');
+  const input=document.getElementById('commandPaletteInput');
+  if(!b) return;
+  const open=typeof force==='boolean'?force:!b.classList.contains('open');
+  b.classList.toggle('open',open);
+  if(open){ _uxCmdActive=0; input.value=''; renderCommandPalette(); setTimeout(()=>input.focus(),30); }
+}
+function renderCommandPalette(){
+  const q=(document.getElementById('commandPaletteInput')?.value||'').toLowerCase();
+  const list=document.getElementById('commandPaletteList');
+  const matches=UX_COMMANDS.filter(c=>c.name.toLowerCase().includes(q));
+  list.innerHTML=matches.map((c,i)=>'<div class="cmd-item '+(i===_uxCmdActive?'active':'')+'" onclick="uxRunCommand(\''+c.name.replace(/'/g,'&#39;')+'\')"><span class="cmd-ico">'+c.icon+'</span><span>'+c.name+'</span><span class="cmd-kbd">'+c.hint+'</span></div>').join('') || '<div class="qc-empty">No commands found.</div>';
+}
+function uxRunCommand(name){
+  const c=UX_COMMANDS.find(x=>x.name===name); if(!c) return;
+  toggleCommandPalette(false); setTimeout(()=>c.run(),30);
+}
+function uxCommandKey(e){
+  const q=(document.getElementById('commandPaletteInput')?.value||'').toLowerCase();
+  const matches=UX_COMMANDS.filter(c=>c.name.toLowerCase().includes(q));
+  if(e.key==='ArrowDown'){e.preventDefault();_uxCmdActive=Math.min(matches.length-1,_uxCmdActive+1);renderCommandPalette();}
+  if(e.key==='ArrowUp'){e.preventDefault();_uxCmdActive=Math.max(0,_uxCmdActive-1);renderCommandPalette();}
+  if(e.key==='Enter'){e.preventDefault(); if(matches[_uxCmdActive]) uxRunCommand(matches[_uxCmdActive].name);}
+  if(e.key==='Escape'){e.preventDefault();toggleCommandPalette(false);}
+}
+
+function uxAttachFloatingSelectionToolbar(doc){
+  if(!doc || doc._uxSelectionToolbarAttached) return;
+  doc._uxSelectionToolbarAttached=true;
+  const show=()=>{
+    const tb=document.getElementById('floatingSelectionToolbar'); if(!tb) return;
+    const sel=doc.defaultView.getSelection();
+    if(!sel || sel.rangeCount===0 || sel.isCollapsed){ tb.classList.remove('open'); return; }
+    const rect=sel.getRangeAt(0).getBoundingClientRect();
+    if(!rect || !rect.width){ tb.classList.remove('open'); return; }
+    const frame=document.getElementById('previewFrame'); const fr=frame.getBoundingClientRect();
+    tb.style.left=(fr.left+rect.left+rect.width/2)+'px';
+    tb.style.top=Math.max(8,fr.top+rect.top-44)+'px';
+    tb.style.transform='translateX(-50%)';
+    tb.classList.add('open');
+  };
+  doc.addEventListener('mouseup',()=>setTimeout(show,10));
+  doc.addEventListener('keyup',()=>setTimeout(show,10));
+  doc.addEventListener('selectionchange',()=>setTimeout(show,10));
+  doc.addEventListener('mousedown',(e)=>{ if(!e.target.closest('img')) document.getElementById('floatingSelectionToolbar')?.classList.remove('open'); },true);
+}
+
+// Extend existing render callback behavior by observing iframe load.
+(function(){
+  const frame=document.getElementById('previewFrame');
+  if(frame){
+    frame.addEventListener('load',()=>{ try{ uxAttachFloatingSelectionToolbar(frame.contentDocument); }catch(e){} });
+  }
+})();
+
+// Ctrl/Cmd+K opens command palette without replacing existing shortcuts.
+document.addEventListener('keydown', function(e){
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
+    e.preventDefault(); toggleCommandPalette(true);
+  }
+}, true);
+
 /* ─── KEYBOARD SHORTCUTS ─── */
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); renderHTML(); }
@@ -2846,12 +5188,20 @@ const _fnrBtn = document.getElementById('btnFnR');
 _fnrBtn.addEventListener('mouseover', () => { if (!document.getElementById('fnrBar').classList.contains('open')) { _fnrBtn.style.borderColor = 'var(--accent)'; _fnrBtn.style.color = 'var(--accent)'; } });
 _fnrBtn.addEventListener('mouseout',  () => { if (!document.getElementById('fnrBar').classList.contains('open')) { _fnrBtn.style.borderColor = 'var(--border)'; _fnrBtn.style.color = 'var(--text)'; } });
 
-// Prevent toolbar clicks from stealing focus/selection from the iframe
+// Keep canvas selection available when the user clicks toolbar controls.
+// Important: allow inputs/selects/color pickers to receive focus so dropdowns still open.
 document.getElementById('mainToolbar').addEventListener('mousedown', function(e) {
-  if (currentMode === 'edit' && iframeDoc) {
-    e.preventDefault(); // keeps cursor position in iframe
+  if (currentMode !== 'edit' || !iframeDoc) return;
+  saveRange();
+
+  const interactive = e.target.closest('select, input, textarea, option, label');
+  if (interactive) return;
+
+  // Buttons should not steal the iframe text selection.
+  if (e.target.closest('button, .tb-btn, .tb-color-preview')) {
+    e.preventDefault();
   }
-});
+}, true);
 
 // Also prevent Find & Replace bar from stealing focus in edit mode
 document.getElementById('fnrBar').addEventListener('mousedown', function(e) {
@@ -2862,7 +5212,474 @@ document.getElementById('fnrBar').addEventListener('mousedown', function(e) {
   }
 });
 
+
+/* ─── FLOATING TOOLTIP FIX ───
+   Uses a body-level tooltip so toolbar hover labels are not clipped by overflow/iframe areas. */
+(function initFloatingTooltips() {
+  let tooltip = null;
+  let activeTarget = null;
+
+  function ensureTooltip() {
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.className = 'floating-tooltip';
+      document.body.appendChild(tooltip);
+    }
+    return tooltip;
+  }
+
+  function positionTooltip(target) {
+    const tip = ensureTooltip();
+    const rect = target.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    const gap = 9;
+
+    let left = rect.left + rect.width / 2;
+    left = Math.max(8 + tipRect.width / 2, Math.min(window.innerWidth - 8 - tipRect.width / 2, left));
+
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const showAbove = spaceAbove >= tipRect.height + gap || spaceAbove > spaceBelow;
+
+    tip.classList.toggle('above', showAbove);
+    tip.classList.toggle('below', !showAbove);
+    tip.style.left = left + 'px';
+    tip.style.top = showAbove
+      ? (rect.top - tipRect.height - gap) + 'px'
+      : (rect.bottom + gap) + 'px';
+  }
+
+  function showTooltip(target) {
+    const text = target.getAttribute('data-tip');
+    if (!text) return;
+    activeTarget = target;
+    const tip = ensureTooltip();
+    tip.textContent = text;
+    tip.classList.remove('above', 'below');
+    tip.classList.add('show');
+    // Position after text is applied so width is accurate.
+    requestAnimationFrame(function () {
+      if (activeTarget === target) positionTooltip(target);
+    });
+  }
+
+  function hideTooltip() {
+    activeTarget = null;
+    if (tooltip) tooltip.classList.remove('show');
+  }
+
+  document.addEventListener('mouseover', function (e) {
+    const target = e.target.closest('[data-tip]');
+    if (target) showTooltip(target);
+  }, true);
+
+  document.addEventListener('mouseout', function (e) {
+    const target = e.target.closest('[data-tip]');
+    if (target && (!e.relatedTarget || !target.contains(e.relatedTarget))) hideTooltip();
+  }, true);
+
+  document.addEventListener('focusin', function (e) {
+    const target = e.target.closest('[data-tip]');
+    if (target) showTooltip(target);
+  }, true);
+
+  document.addEventListener('focusout', hideTooltip, true);
+  window.addEventListener('scroll', function () { if (activeTarget) positionTooltip(activeTarget); }, true);
+  window.addEventListener('resize', function () { if (activeTarget) positionTooltip(activeTarget); });
+})();
+
+
+
+/* ═══════════════════════════════════════════
+   IMAGE ALT TEXT TOOLBAR
+   Shows when an image is clicked in the rendered canvas.
+═══════════════════════════════════════════ */
+let _selectedAltImage = null;
+let _selectedAltImageOldOutline = '';
+let _selectedAltImageOldBoxShadow = '';
+
+function ensureImageAltToolbar() {
+  let tb = document.getElementById('imageAltToolbar');
+  if (tb) return tb;
+
+  tb = document.createElement('div');
+  tb.id = 'imageAltToolbar';
+  tb.className = 'image-alt-toolbar';
+  tb.innerHTML = `
+    <label for="imageAltInput">Alt text</label>
+    <input id="imageAltInput" type="text" placeholder="Describe the image for screen readers" />
+    <button type="button" class="btn-alt-save" onclick="saveImageAltText()">Save</button>
+    <button type="button" class="btn-alt-decorative" onclick="markImageDecorative()">Decorative</button>
+    <button type="button" class="btn-alt-close" onclick="hideImageAltToolbar()">×</button>
+  `;
+  document.body.appendChild(tb);
+
+  const input = tb.querySelector('#imageAltInput');
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveImageAltText();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      hideImageAltToolbar();
+    }
+  });
+  return tb;
+}
+
+function clearSelectedImageHighlight() {
+  if (_selectedAltImage) {
+    try {
+      _selectedAltImage.style.outline = _selectedAltImageOldOutline || '';
+      _selectedAltImage.style.boxShadow = _selectedAltImageOldBoxShadow || '';
+    } catch(e) {}
+  }
+}
+
+function showImageAltToolbar(img) {
+  if (!img) return;
+  clearSelectedImageHighlight();
+
+  _selectedAltImage = img;
+  _selectedAltImageOldOutline = img.style.outline || '';
+  _selectedAltImageOldBoxShadow = img.style.boxShadow || '';
+  img.style.outline = '3px solid #0078d4';
+  img.style.boxShadow = '0 0 0 3px rgba(0,120,212,0.18)';
+
+  const tb = ensureImageAltToolbar();
+  const input = tb.querySelector('#imageAltInput');
+  input.value = img.getAttribute('alt') || '';
+
+  positionImageAltToolbar(img, tb);
+  tb.classList.add('open');
+  setStatus('Image selected — add or update alt text', false);
+
+  setTimeout(function(){ input.focus(); input.select(); }, 0);
+}
+
+function positionImageAltToolbar(img, tb) {
+  const frame = document.getElementById('previewFrame');
+  if (!frame || !img || !tb) return;
+
+  const frameRect = frame.getBoundingClientRect();
+  const imgRect = img.getBoundingClientRect();
+  const gap = 10;
+
+  // Make toolbar measurable before positioning.
+  tb.style.visibility = 'hidden';
+  tb.classList.add('open');
+  const tbRect = tb.getBoundingClientRect();
+
+  let left = frameRect.left + imgRect.left + (imgRect.width / 2) - (tbRect.width / 2);
+  left = Math.max(8, Math.min(window.innerWidth - tbRect.width - 8, left));
+
+  let top = frameRect.top + imgRect.top - tbRect.height - gap;
+  if (top < 8) top = frameRect.top + imgRect.bottom + gap;
+  top = Math.max(8, Math.min(window.innerHeight - tbRect.height - 8, top));
+
+  tb.style.left = left + 'px';
+  tb.style.top = top + 'px';
+  tb.style.visibility = 'visible';
+}
+
+function hideImageAltToolbar() {
+  const tb = document.getElementById('imageAltToolbar');
+  if (tb) tb.classList.remove('open');
+  clearSelectedImageHighlight();
+  _selectedAltImage = null;
+}
+
+function saveImageAltText() {
+  if (!_selectedAltImage) return;
+  const input = document.getElementById('imageAltInput');
+  const value = (input ? input.value : '').trim();
+  _selectedAltImage.setAttribute('alt', value);
+  _selectedAltImage.removeAttribute('aria-hidden');
+  syncCode(true);
+  updateStats(iframeDoc);
+  pushHistorySnapshot(false);
+  setStatus(value ? 'Image alt text saved ✓' : 'Image marked with empty alt text', true);
+  hideImageAltToolbar();
+}
+
+function markImageDecorative() {
+  if (!_selectedAltImage) return;
+  _selectedAltImage.setAttribute('alt', '');
+  _selectedAltImage.setAttribute('aria-hidden', 'true');
+  syncCode(true);
+  updateStats(iframeDoc);
+  pushHistorySnapshot(false);
+  setStatus('Image marked as decorative ✓', true);
+  hideImageAltToolbar();
+}
+
+function attachImageAltToolbarListeners(doc) {
+  if (!doc || !doc.body || doc._imageAltToolbarReady) return;
+  doc._imageAltToolbarReady = true;
+
+  doc.addEventListener('click', function(e) {
+    const img = e.target && e.target.closest ? e.target.closest('img') : null;
+    if (img) {
+      e.preventDefault();
+      e.stopPropagation();
+      showImageAltToolbar(img);
+    } else {
+      // Do not close when user is interacting with parent toolbar; iframe clicks only reach here.
+      hideImageAltToolbar();
+    }
+  }, true);
+}
+
+window.addEventListener('resize', function() {
+  const tb = document.getElementById('imageAltToolbar');
+  if (_selectedAltImage && tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+});
+window.addEventListener('scroll', function() {
+  const tb = document.getElementById('imageAltToolbar');
+  if (_selectedAltImage && tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+}, true);
+
+// Keep toolbar clicks from affecting the iframe selection.
+document.addEventListener('mousedown', function(e) {
+  if (e.target && e.target.closest && e.target.closest('#imageAltToolbar')) e.stopPropagation();
+}, true);
+
 setStatus('Ready — paste HTML and press Ctrl+Enter to render', false);
+
+// Keep hex color inputs synced with their color pickers on initial load.
+try {
+  syncHexFromPicker('txtColor','txtColorHex');
+  syncHexFromPicker('hlColor','hlColorHex');
+} catch(e) {}
+
+
+/* ══════════════════════════════════════
+   PATCH: Expand collapsed panels when KB/MAS issues are clicked
+   Behavior: KB Standards / MAS Accessibility issue click opens the relevant
+   collapsible section first, then scrolls and highlights the exact issue.
+══════════════════════════════════════ */
+(function(){
+  function getEditorDoc(){
+    try {
+      if (window.iframeDoc && window.iframeDoc.body) return window.iframeDoc;
+      var frame = document.getElementById('previewFrame');
+      return frame ? (frame.contentDocument || frame.contentWindow.document) : null;
+    } catch(e) { return null; }
+  }
+
+  function ensureIssueHighlightCSS(doc){
+    if (!doc || doc.getElementById('kbIssueExpandHighlightStyle')) return;
+    var st = doc.createElement('style');
+    st.id = 'kbIssueExpandHighlightStyle';
+    st.textContent = `
+      .kb-std-highlight-target,
+      .kb-issue-highlight-target {
+        outline: 3px solid #0078d4 !important;
+        outline-offset: 3px !important;
+        background: rgba(0,120,212,.12) !important;
+        box-shadow: 0 0 0 6px rgba(0,120,212,.08) !important;
+        transition: outline .15s ease, background .15s ease, box-shadow .15s ease;
+      }
+      .kb-std-missing-marker,
+      .kb-issue-missing-marker {
+        border: 2px dashed #0078d4 !important;
+        background: #eef6ff !important;
+        color: #003b70 !important;
+        font-family: Segoe UI, sans-serif !important;
+        font-size: 12pt !important;
+        padding: 10px 12px !important;
+        margin: 8px 0 14px 0 !important;
+        border-radius: 4px !important;
+      }
+    `;
+    (doc.head || doc.documentElement).appendChild(st);
+  }
+
+  function getPanelBodyFromElement(el, doc){
+    if (!el || !doc) return null;
+    var node = el.nodeType === 1 ? el : el.parentElement;
+    if (!node) return null;
+    if (node.classList && node.classList.contains('collapsible_panel_body')) return node;
+    return node.closest ? node.closest('.collapsible_panel_body') : null;
+  }
+
+  function getPanelFromBody(body){
+    if (!body) return null;
+    return body.closest ? body.closest('.collapsible_panel') : null;
+  }
+
+  function openSingleCollapsibleBody(body, doc){
+    if (!body || !doc) return;
+    var panel = getPanelFromBody(body);
+    var head = null;
+
+    if (panel) {
+      try { head = panel.querySelector(':scope > .collapsible_panel_head'); } catch(e) {}
+      if (!head) head = panel.querySelector('.collapsible_panel_head');
+    }
+    if (!head && body.previousElementSibling && body.previousElementSibling.classList.contains('collapsible_panel_head')) {
+      head = body.previousElementSibling;
+    }
+
+    // Force body visible. Do not rely only on the original inline onclick because
+    // some imported templates have different icon logic but all use display block/none.
+    body.style.display = 'block';
+    body.removeAttribute('hidden');
+    body.setAttribute('aria-hidden', 'false');
+    body.classList.add('kb-expanded-by-checker');
+
+    if (panel) {
+      panel.classList.add('kb-expanded-by-checker');
+      panel.classList.add('kb-open');
+    }
+    if (head) {
+      head.classList.add('kb-open');
+      head.setAttribute('aria-expanded', 'true');
+      head.setAttribute('data-expanded-by-checker', 'true');
+
+      // If the template uses an icon element with CSS content, mark it as open too.
+      var icon = head.querySelector('.collapsible_panel_icon');
+      if (icon) {
+        icon.classList.add('kb-open');
+        icon.setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+
+  function expandCollapsibleAncestorsForIssue(target){
+    var doc = getEditorDoc();
+    if (!target || !doc) return;
+
+    var node = target.nodeType === 1 ? target : target.parentElement;
+    var bodies = [];
+
+    while (node && node !== doc.body && node.nodeType === 1) {
+      if (node.classList && node.classList.contains('collapsible_panel_body')) {
+        bodies.push(node);
+      }
+      node = node.parentElement;
+    }
+
+    bodies.reverse().forEach(function(body){
+      openSingleCollapsibleBody(body, doc);
+    });
+
+    // Also handle when the issue target is the panel itself or its header.
+    var el = target.nodeType === 1 ? target : target.parentElement;
+    if (el && el.closest) {
+      var panel = el.closest('.collapsible_panel');
+      if (panel) {
+        var body = null;
+        try { body = panel.querySelector(':scope > .collapsible_panel_body'); } catch(e) {}
+        if (!body) body = panel.querySelector('.collapsible_panel_body');
+        if (body && el !== panel.querySelector('.collapsible_panel_head')) {
+          // Only force open when the highlighted item is in or below the body,
+          // or when the result refers to the whole panel.
+          if (body.contains(el) || el === panel) openSingleCollapsibleBody(body, doc);
+        }
+      }
+    }
+  }
+
+  // Expose the improved behavior under the same name used by the existing code.
+  window.expandCollapsibleAncestors = expandCollapsibleAncestorsForIssue;
+
+  function flashSourceNear(text){
+    var source = document.getElementById('codeInput');
+    if (!source) return;
+    source.classList.add('std-source-flash');
+    var code = source.value || '';
+    var pos = 0;
+    var needle = String(text || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+
+    if (needle) {
+      var normalized = code.replace(/\s+/g, ' ');
+      var normalizedPos = normalized.indexOf(needle);
+      if (normalizedPos >= 0) {
+        // Fallback approximate selection near a unique smaller piece.
+        var shorter = needle.slice(0, 40);
+        var found = code.indexOf(shorter);
+        if (found >= 0) pos = found;
+      } else {
+        var direct = code.indexOf(String(text || '').trim().slice(0, 60));
+        if (direct >= 0) pos = direct;
+      }
+    }
+    if (pos === 0) {
+      var bodyPos = code.toLowerCase().indexOf('<body');
+      pos = bodyPos >= 0 ? bodyPos : 0;
+    }
+    try {
+      source.focus();
+      source.setSelectionRange(pos, Math.min(code.length, pos + 160));
+    } catch(e) {}
+    setTimeout(function(){ try { source.classList.remove('std-source-flash'); } catch(e){} }, 3200);
+  }
+
+  function highlightIssueElement(el){
+    var doc = getEditorDoc();
+    if (!el || !doc) return;
+    expandCollapsibleAncestorsForIssue(el);
+    ensureIssueHighlightCSS(doc);
+    el.classList.add('kb-std-highlight-target', 'kb-issue-highlight-target');
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); } catch(e) {}
+    setTimeout(function(){
+      try { el.classList.remove('kb-std-highlight-target', 'kb-issue-highlight-target'); } catch(e) {}
+    }, 4200);
+  }
+
+  function highlightMissingTarget(result, sourceName){
+    var doc = getEditorDoc();
+    if (!doc) return;
+    ensureIssueHighlightCSS(doc);
+
+    var marker = doc.createElement('div');
+    marker.className = 'kb-std-missing-marker kb-issue-missing-marker kb-std-highlight-target kb-issue-highlight-target';
+    marker.setAttribute('contenteditable', 'false');
+    marker.textContent = (result.target && result.target.label) || result.title || 'Suggested insertion area';
+
+    var insertBefore = doc.body.firstElementChild;
+    if (result.target && (result.target.type === 'missing-image' || result.target.type === 'missing-link')) {
+      insertBefore = doc.body.querySelector('.collapsible_panel') || doc.body.firstElementChild;
+    }
+    doc.body.insertBefore(marker, insertBefore || null);
+    try { marker.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' }); } catch(e) {}
+    flashSourceNear('');
+    if (typeof setStatus === 'function') setStatus((result.title || sourceName + ' issue') + ': suggested area highlighted', true);
+    setTimeout(function(){ try { marker.remove(); } catch(e){} }, 4200);
+  }
+
+  function highlightCheckerResult(result, sourceName){
+    if (!result) return;
+    var doc = getEditorDoc();
+    if (!doc) return;
+
+    if (result.elements && result.elements.length) {
+      result.elements.forEach(function(el, i){
+        highlightIssueElement(el);
+        if (i === 0) flashSourceNear(el.outerHTML || el.textContent || '');
+      });
+      if (typeof setStatus === 'function') setStatus((result.title || sourceName + ' issue') + ': related collapsible expanded and issue highlighted', true);
+      return;
+    }
+    if (result.target) {
+      highlightMissingTarget(result, sourceName);
+    }
+  }
+
+  // Override the existing inline onclick targets used by KB Standards and MAS checks.
+  window.stdHighlight = function(idx){
+    var result = window._stdResults && window._stdResults[idx];
+    highlightCheckerResult(result, 'KB Standards');
+  };
+
+  window.masHighlight = function(idx){
+    var result = window._masResults && window._masResults[idx];
+    highlightCheckerResult(result, 'MAS Accessibility');
+  };
+})();
+
 </script>
 </body>
 </html>
