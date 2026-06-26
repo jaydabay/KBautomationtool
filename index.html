@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>KB Automation</title>
-<!-- Fix: collapsibles remain collapsed on render; KB/MAS issue clicks expand only the target section. -->
+<!-- Update: MS Word-like image selection frame with stable iframe resize handles. -->
 <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
   :root {
@@ -1164,6 +1164,56 @@
   .image-alt-toolbar .btn-alt-close:hover { background: var(--surface3); color: var(--text); }
 
 
+  /* ── Word-like Image Resize Overlay ──
+     Parent-window overlay, so no editor-only handles are written into article HTML. */
+  .image-word-resize-overlay {
+    position: fixed;
+    z-index: 2147483645;
+    display: none;
+    border: 2px solid #0078d4;
+    box-shadow: 0 0 0 2px rgba(0,120,212,0.16);
+    pointer-events: none;
+    background: transparent;
+  }
+  .image-word-resize-overlay.open { display: block; }
+  .image-resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #ffffff;
+    border: 2px solid #0078d4;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.20);
+    pointer-events: auto;
+    touch-action: none;
+  }
+  .image-resize-handle[data-dir="nw"] { left: -6px; top: -6px; cursor: nwse-resize; }
+  .image-resize-handle[data-dir="n"]  { left: 50%; top: -6px; transform: translateX(-50%); cursor: ns-resize; }
+  .image-resize-handle[data-dir="ne"] { right: -6px; top: -6px; cursor: nesw-resize; }
+  .image-resize-handle[data-dir="e"]  { right: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+  .image-resize-handle[data-dir="se"] { right: -6px; bottom: -6px; cursor: nwse-resize; }
+  .image-resize-handle[data-dir="s"]  { left: 50%; bottom: -6px; transform: translateX(-50%); cursor: ns-resize; }
+  .image-resize-handle[data-dir="sw"] { left: -6px; bottom: -6px; cursor: nesw-resize; }
+  .image-resize-handle[data-dir="w"]  { left: -6px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+  .image-size-badge {
+    position: absolute;
+    right: -2px;
+    bottom: calc(100% + 8px);
+    background: #323130;
+    color: #fff;
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .12s ease;
+  }
+  .image-word-resize-overlay.resizing .image-size-badge { opacity: 1; }
+
+
 
 /* ══════════════════════════════════════
    HULY-INSPIRED UI REFRESH
@@ -1748,8 +1798,14 @@ header,
   <div class="tb-sep"></div>
 
   <!-- Font family -->
-  <select class="tb-select" id="fontFamily" title="Font Family" style="width:116px" onchange="applyFont()" data-tip="Font Family">
+  <select class="tb-select" id="fontFamily" title="Font Family" style="width:156px" onchange="applyFont()" data-tip="Font Family">
     <option>Segoe UI</option>
+    <option>Segoe UI Black</option>
+    <option>Segoe UI Emoji</option>
+    <option>Segoe UI Historic</option>
+    <option>Segoe UI Light</option>
+    <option>Segoe UI Semibold</option>
+    <option>Segoe UI Semilight</option>
     <option>Arial</option>
     <option>Georgia</option>
     <option>Times New Roman</option>
@@ -2311,13 +2367,14 @@ function wrapFragment(fragment) {
     'div.collapsible_panel_head { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 24px; padding: 4px 0; min-height: 14px; position: relative; }',
     'div.collapsible_panel_head:hover { background: #f5f5f5; }',
     'div.collapsible_panel_head::before { content: ""; display: block; width: 8px; height: 8px; border-right: 2px solid #605e5c; border-bottom: 2px solid #605e5c; transform: rotate(-45deg); transition: transform .15s ease; flex-shrink: 0; margin-left: 4px; }',
-    'div.collapsible_panel_head.kb-open::before { transform: rotate(45deg); }',
+    'div.collapsible_panel_head.kb-open::before, div.collapsible_panel_head[aria-expanded="true"]::before { transform: rotate(45deg); }',
     '.collapsible_panel_title { flex: 1; min-width: 0; }',
     '.collapsible_panel_title p { margin: 0; }',
     '.collapsible_panel_body { display: none; padding: 4px 0 8px 24px; }',
     '.collapsible_panel_body p:first-child { margin-top: 0; }',
     '.collapsible_panel_body p:last-child { margin-bottom: 0; }',
     '.collapsible_panel_icon { display: none !important; }',
+    '.collapsible_panel_head.kb-open .collapsible_panel_icon, .collapsible_panel_head[aria-expanded="true"] .collapsible_panel_icon { transform: rotate(90deg); }',
     'span.collapsible_panel_head { display: block; padding: 0; cursor: default; }',
     'span.collapsible_panel_head:hover { background: transparent; }',
     '[style*=\"Semibold\" i] { font-weight: 600 !important; }',
@@ -2332,8 +2389,10 @@ function wrapFragment(fragment) {
     'function sync(head){' +
       'var body = head.nextElementSibling;' +
       'if(!body || !body.classList || !body.classList.contains("collapsible_panel_body")) return;' +
-      'if(body.style.display === "block"){ head.classList.add("kb-open"); }' +
-      'else { head.classList.remove("kb-open"); }' +
+      'var isOpen = (body.style.display === "block") || (window.getComputedStyle && window.getComputedStyle(body).display !== "none" && body.getAttribute("aria-hidden") !== "true");' +
+      'head.classList.toggle("kb-open", !!isOpen);' +
+      'head.setAttribute("aria-expanded", isOpen ? "true" : "false");' +
+      'body.setAttribute("aria-hidden", isOpen ? "false" : "true");' +
     '}' +
     'var heads = document.querySelectorAll("div.collapsible_panel_head");' +
     'heads.forEach(function(head){' +
@@ -2346,23 +2405,27 @@ function wrapFragment(fragment) {
       '}' +
       'head.addEventListener("click", function(){ setTimeout(function(){ sync(head); }, 0); });' +
     '});' +
-
-    /* AUTO-FIX KB STANDARD TYPOGRAPHY — runs once on render.
-       Section headings (14pt / Semibold / #243a5e) are normalized to
-       the canonical KB heading style; 12pt black body text is
-       normalized to the canonical KB body style. */
+    /* SAFE KB TYPOGRAPHY NORMALIZATION — runs once on render.
+       This no longer treats every 14pt wrapper as a heading because that
+       caused normal body paragraphs to inherit KB blue (#243a5e).
+       Only real headings and collapsible titles are normalized. */
     'var allEls = document.querySelectorAll("[style]");' +
     'allEls.forEach(function(el){' +
       'var s = el.getAttribute("style") || "";' +
-      'var isHeading = /Semibold/i.test(s) || /14pt/.test(s) || /243a5e/i.test(s) || /36,\\s*58,\\s*94/.test(s);' +
-      'var isBody = /12pt/.test(s) && /rgba\\(0,\\s*0,\\s*0/.test(s);' +
+      'var tag = (el.tagName || "").toLowerCase();' +
+      'var text = (el.textContent || "").trim();' +
+      'var isCollapsibleTitle = !!(el.closest && el.closest(".collapsible_panel_title"));' +
+      'var isSemanticHeading = /^h[1-4]$/.test(tag);' +
+      'var isShortStyledHeading = tag === "span" && /Semibold/i.test(s) && /14pt/.test(s) && text.length > 0 && text.length <= 120;' +
+      'var isHeading = isCollapsibleTitle || isSemanticHeading || isShortStyledHeading;' +
+      'var isBody = /12pt/.test(s) && /rgba\(0,\s*0,\s*0/.test(s);' +
       'if (isHeading) {' +
-        'el.style.setProperty("font-family", "\\"Segoe UI Semibold\\", \\"Segoe UI\\", sans-serif");' +
+        'el.style.setProperty("font-family", "\"Segoe UI Semibold\", \"Segoe UI\", sans-serif");' +
         'el.style.setProperty("font-weight", "600");' +
         'el.style.setProperty("color", "#243a5e");' +
         'el.style.setProperty("font-size", "14pt");' +
       '} else if (isBody) {' +
-        'el.style.setProperty("font-family", "\\"Segoe UI\\", \\"Helvetica Neue\\", sans-serif");' +
+        'el.style.setProperty("font-family", "\"Segoe UI\", \"Helvetica Neue\", sans-serif");' +
         'el.style.setProperty("font-size", "12pt");' +
       '}' +
     '});' +
@@ -2383,7 +2446,7 @@ function enhanceCollapsibles(htmlCode) {
     'div.collapsible_panel_head { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 24px; padding: 4px 0; min-height: 14px; position: relative; }',
     'div.collapsible_panel_head:hover { background: #f5f5f5; }',
     'div.collapsible_panel_head::before { content: ""; display: block; width: 8px; height: 8px; border-right: 2px solid #605e5c; border-bottom: 2px solid #605e5c; transform: rotate(-45deg); transition: transform .15s ease; flex-shrink: 0; margin-left: 4px; }',
-    'div.collapsible_panel_head.kb-open::before { transform: rotate(45deg); }',
+    'div.collapsible_panel_head.kb-open::before, div.collapsible_panel_head[aria-expanded="true"]::before { transform: rotate(45deg); }',
     '.collapsible_panel_title, .collapsible_panel_title p, .collapsible_panel_title span { text-align: left !important; }',
     '.collapsible_panel_title { flex: 1; min-width: 0; color: #243a5e; font-family: "Segoe UI Semibold", "Segoe UI", sans-serif; font-size: 14pt; font-weight: 600; }',
     '.collapsible_panel_title p { margin: 0; }',
@@ -2394,6 +2457,7 @@ function enhanceCollapsibles(htmlCode) {
     '.collapsible_panel_body ul, .collapsible_panel_body ol { margin: 4px 0; padding-left: 24px; }',
     '.collapsible_panel_body li { display: list-item; padding: 0; margin: 0; list-style-position: outside; }',
     '.collapsible_panel_icon { display: none !important; }',
+    '.collapsible_panel_head.kb-open .collapsible_panel_icon, .collapsible_panel_head[aria-expanded="true"] .collapsible_panel_icon { transform: rotate(90deg); }',
     'span.collapsible_panel_head { display: block; padding: 0; cursor: default; }',
     'span.collapsible_panel_head:hover { background: transparent; }',
     '[style*="Semibold" i] { font-weight: 600 !important; }'
@@ -2404,7 +2468,10 @@ function enhanceCollapsibles(htmlCode) {
     'function sync(head){' +
       'var body=head.nextElementSibling;' +
       'if(!body||!body.classList||!body.classList.contains("collapsible_panel_body")) return;' +
-      'if(body.style.display==="block"){head.classList.add("kb-open");}else{head.classList.remove("kb-open");}' +
+      'var isOpen=(body.style.display==="block")||(window.getComputedStyle&&window.getComputedStyle(body).display!=="none"&&body.getAttribute("aria-hidden")!=="true");' +
+      'head.classList.toggle("kb-open",!!isOpen);' +
+      'head.setAttribute("aria-expanded",isOpen?"true":"false");' +
+      'body.setAttribute("aria-hidden",isOpen?"false":"true");' +
     '}' +
     'document.querySelectorAll("div.collapsible_panel_head").forEach(function(head){' +
       'var body=head.nextElementSibling;' +
@@ -2434,9 +2501,9 @@ function enhanceCollapsibles(htmlCode) {
       'el.style.setProperty("font-size", "14pt");' +
     '});' +
     'document.querySelectorAll(".collapsible_panel_body, .collapsible_panel_body span, .collapsible_panel_body p, .collapsible_panel_body li").forEach(function(el){' +
-      'el.style.setProperty("font-family", "\\"Segoe UI\\", \\"Helvetica Neue\\", sans-serif");' +
+      'el.style.setProperty("font-family", "\"Segoe UI\", \"Helvetica Neue\", sans-serif");' +
       'el.style.setProperty("font-size", "12pt");' +
-      'if(el.tagName.toLowerCase()!=="a"){el.style.setProperty("color", "#000");}' +
+      '/* Keep user-authored colors inside collapsibles; the body container CSS provides black by default. */' +
     '});' +
     '})();';
 
@@ -3269,11 +3336,15 @@ function bindCollapsiblePanel(panel) {
   if (!head || !body) return;
 
   function sync() {
-    if (body.style.display === 'block') head.classList.add('kb-open');
-    else head.classList.remove('kb-open');
+    const isOpen = body.style.display === 'block' || (window.getComputedStyle && window.getComputedStyle(body).display !== 'none' && body.getAttribute('aria-hidden') !== 'true');
+    head.classList.toggle('kb-open', !!isOpen);
+    head.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    body.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
   }
 
   if (!body.style.display) body.style.display = 'none';
+  body.setAttribute('aria-hidden', body.style.display === 'block' ? 'false' : 'true');
+  head.setAttribute('aria-expanded', body.style.display === 'block' ? 'true' : 'false');
   head.onclick = function(event) {
     // Allow editing text/links inside the header without unexpected bubbling issues.
     const target = event.target;
@@ -4285,9 +4356,7 @@ function runStandardsCheck() {
   const passes = results.filter(r => r.status === 'pass').length;
   const fails  = results.filter(r => r.status === 'fail').length;
   const warns  = results.filter(r => r.status === 'warn').length;
-  // Score rule: only failed items lower the score; info/warn are guidance only.
-  const failCountForScore = results.filter(r => r.status === 'fail').length;
-  const score  = results.length ? Math.round(((results.length - failCountForScore) / results.length) * 100) : 100;
+  const score  = Math.round((passes / results.length) * 100);
   const scoreColor = score >= 80 ? '#107c10' : score >= 50 ? '#d47500' : '#c50f1f';
 
   let html = '';
@@ -4648,9 +4717,7 @@ function renderAccessibilityResults(results) {
   const passes = results.filter(r => r.status === 'pass').length;
   const fails  = results.filter(r => r.status === 'fail').length;
   const warns  = results.filter(r => r.status === 'warn').length;
-  // Score rule: only failed items lower the score; info/warn are guidance only.
-  const failCountForScore = results.filter(r => r.status === 'fail').length;
-  const score  = results.length ? Math.round(((results.length - failCountForScore) / results.length) * 100) : 100;
+  const score  = results.length ? Math.round((passes / results.length) * 100) : 100;
   const scoreColor = score >= 80 ? '#107c10' : score >= 50 ? '#d47500' : '#c50f1f';
 
   let html = '';
@@ -5035,9 +5102,7 @@ function renderQualityCenter(){
   const infos=all.filter(r=>r.status==='info').length;
   const warns=all.filter(r=>r.status==='warn').length;
   const fails=all.filter(r=>r.status==='fail').length;
-  // Publish Readiness: only FAILED items reduce the score.
-  // PASS, INFO, and WARN do not apply any penalty.
-  const weighted = all.length ? Math.max(0, Math.round(((all.length - fails) / all.length) * 100)) : 100;
+  const weighted = all.length ? Math.max(0, Math.round(((passes + infos*.75 + warns*.35) / all.length) * 100)) : 0;
   _uxFlatIssues=all.filter(r=>r.status!=='pass');
   document.getElementById('qcPassCount').textContent=passes;
   document.getElementById('qcInfoCount').textContent=infos;
@@ -5291,12 +5356,13 @@ document.getElementById('fnrBar').addEventListener('mousedown', function(e) {
 
 
 /* ═══════════════════════════════════════════
-   IMAGE ALT TEXT TOOLBAR
-   Shows when an image is clicked in the rendered canvas.
+   IMAGE ALT TEXT + WORD-LIKE RESIZE TOOLBAR
+   Click an image to select it, then drag any edge/corner handle.
+   Handles live outside the iframe, so clean HTML output stays clean.
 ═══════════════════════════════════════════ */
 let _selectedAltImage = null;
-let _selectedAltImageOldOutline = '';
-let _selectedAltImageOldBoxShadow = '';
+let _imageResizeOverlay = null;
+let _imageResizeState = null;
 
 function ensureImageAltToolbar() {
   let tb = document.getElementById('imageAltToolbar');
@@ -5328,34 +5394,94 @@ function ensureImageAltToolbar() {
   return tb;
 }
 
+function ensureImageResizeOverlay() {
+  if (_imageResizeOverlay) return _imageResizeOverlay;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'imageWordResizeOverlay';
+  overlay.className = 'image-word-resize-overlay';
+  overlay.innerHTML = `
+    <div class="image-size-badge" id="imageSizeBadge"></div>
+    <span class="image-resize-handle" data-dir="nw"></span>
+    <span class="image-resize-handle" data-dir="n"></span>
+    <span class="image-resize-handle" data-dir="ne"></span>
+    <span class="image-resize-handle" data-dir="e"></span>
+    <span class="image-resize-handle" data-dir="se"></span>
+    <span class="image-resize-handle" data-dir="s"></span>
+    <span class="image-resize-handle" data-dir="sw"></span>
+    <span class="image-resize-handle" data-dir="w"></span>
+  `;
+  document.body.appendChild(overlay);
+
+  function beginHandleResize(e) {
+    const handle = e.target && e.target.closest ? e.target.closest('.image-resize-handle') : null;
+    if (!handle || !_selectedAltImage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    startImageResize(e, handle.getAttribute('data-dir'));
+  }
+  // Use pointer events only. A normal click on the image should only select it;
+  // resizing starts only from a handle and only after the pointer actually moves.
+  overlay.addEventListener('pointerdown', beginHandleResize, true);
+
+  _imageResizeOverlay = overlay;
+  return overlay;
+}
+
+function getIframeViewportRectForImage(img) {
+  const frame = document.getElementById('previewFrame');
+  if (!frame || !img) return null;
+  const frameRect = frame.getBoundingClientRect();
+  const imgRect = img.getBoundingClientRect();
+  return {
+    left: frameRect.left + imgRect.left,
+    top: frameRect.top + imgRect.top,
+    width: imgRect.width,
+    height: imgRect.height,
+    right: frameRect.left + imgRect.right,
+    bottom: frameRect.top + imgRect.bottom
+  };
+}
+
+function updateImageSizeBadge(widthPx) {
+  const badge = document.getElementById('imageSizeBadge');
+  if (badge) badge.textContent = Math.round(widthPx) + ' px';
+}
+
+function positionImageResizeOverlay(img) {
+  const overlay = ensureImageResizeOverlay();
+  const rect = getIframeViewportRectForImage(img);
+  if (!rect || rect.width <= 0 || rect.height <= 0) return;
+  overlay.style.left = rect.left + 'px';
+  overlay.style.top = rect.top + 'px';
+  overlay.style.width = rect.width + 'px';
+  overlay.style.height = rect.height + 'px';
+  updateImageSizeBadge(rect.width);
+  overlay.classList.add('open');
+}
+
 function clearSelectedImageHighlight() {
-  if (_selectedAltImage) {
-    try {
-      _selectedAltImage.style.outline = _selectedAltImageOldOutline || '';
-      _selectedAltImage.style.boxShadow = _selectedAltImageOldBoxShadow || '';
-    } catch(e) {}
+  const overlay = document.getElementById('imageWordResizeOverlay');
+  if (overlay) {
+    overlay.classList.remove('open', 'resizing');
+    overlay.style.left = '-9999px';
+    overlay.style.top = '-9999px';
   }
 }
 
 function showImageAltToolbar(img) {
   if (!img) return;
-  clearSelectedImageHighlight();
 
   _selectedAltImage = img;
-  _selectedAltImageOldOutline = img.style.outline || '';
-  _selectedAltImageOldBoxShadow = img.style.boxShadow || '';
-  img.style.outline = '3px solid #0078d4';
-  img.style.boxShadow = '0 0 0 3px rgba(0,120,212,0.18)';
 
   const tb = ensureImageAltToolbar();
   const input = tb.querySelector('#imageAltInput');
   input.value = img.getAttribute('alt') || '';
 
+  positionImageResizeOverlay(img);
   positionImageAltToolbar(img, tb);
   tb.classList.add('open');
-  setStatus('Image selected — add or update alt text', false);
-
-  setTimeout(function(){ input.focus(); input.select(); }, 0);
+  setStatus('Image selected — drag the blue handles to resize', false);
 }
 
 function positionImageAltToolbar(img, tb) {
@@ -5364,9 +5490,8 @@ function positionImageAltToolbar(img, tb) {
 
   const frameRect = frame.getBoundingClientRect();
   const imgRect = img.getBoundingClientRect();
-  const gap = 10;
+  const gap = 12;
 
-  // Make toolbar measurable before positioning.
   tb.style.visibility = 'hidden';
   tb.classList.add('open');
   const tbRect = tb.getBoundingClientRect();
@@ -5414,6 +5539,124 @@ function markImageDecorative() {
   hideImageAltToolbar();
 }
 
+function getImageResizeMaxWidth(img) {
+  if (!img) return 1400;
+  const parent = img.parentElement;
+  const parentWidth = parent ? parent.getBoundingClientRect().width : 1200;
+  return Math.max(80, Math.min(1600, parentWidth));
+}
+
+function startImageResize(e, dir) {
+  if (!_selectedAltImage) return;
+  const rect = _selectedAltImage.getBoundingClientRect();
+  const aspect = rect.width && rect.height ? rect.width / rect.height : 1;
+  _imageResizeState = {
+    img: _selectedAltImage,
+    dir: dir || 'se',
+    startX: e.clientX,
+    startY: e.clientY,
+    startW: rect.width,
+    startH: rect.height,
+    aspect: aspect,
+    maxW: getImageResizeMaxWidth(_selectedAltImage),
+    active: false,
+    changed: false,
+    pointerId: e.pointerId
+  };
+
+  const overlay = ensureImageResizeOverlay();
+  if (typeof overlay.setPointerCapture === 'function' && e.pointerId != null) {
+    try { overlay.setPointerCapture(e.pointerId); } catch(_) {}
+  }
+
+  const frame = document.getElementById('previewFrame');
+  const doc = frame && frame.contentDocument;
+  if (doc && doc.body) doc.body.style.userSelect = 'none';
+  document.body.style.userSelect = 'none';
+
+  document.addEventListener('pointermove', resizeSelectedImageFromPointer, true);
+  document.addEventListener('pointerup', stopImageResize, true);
+  document.addEventListener('pointercancel', stopImageResize, true);
+}
+
+function resizeSelectedImageFromPointer(e) {
+  const st = _imageResizeState;
+  if (!st || !st.img) return;
+  if (st.pointerId != null && e.pointerId != null && e.pointerId !== st.pointerId) return;
+  e.preventDefault();
+
+  const dx = e.clientX - st.startX;
+  const dy = e.clientY - st.startY;
+
+  // Important: a simple click/tap on an image or handle must not resize.
+  // Start resizing only after a small intentional drag threshold.
+  if (!st.active) {
+    if (Math.hypot(dx, dy) < 5) return;
+    st.active = true;
+    const overlay = ensureImageResizeOverlay();
+    overlay.classList.add('resizing');
+  }
+
+  const dir = st.dir;
+
+  let width = st.startW;
+
+  if (dir.includes('e')) width = st.startW + dx;
+  else if (dir.includes('w')) width = st.startW - dx;
+  else if (dir.includes('s')) width = (st.startH + dy) * st.aspect;
+  else if (dir.includes('n')) width = (st.startH - dy) * st.aspect;
+
+  if ((dir.length === 2) && (dir.includes('n') || dir.includes('s')) && (dir.includes('e') || dir.includes('w'))) {
+    const widthFromX = dir.includes('e') ? st.startW + dx : st.startW - dx;
+    const widthFromY = (dir.includes('s') ? st.startH + dy : st.startH - dy) * st.aspect;
+    width = Math.max(widthFromX, widthFromY);
+  }
+
+  width = Math.max(48, Math.min(st.maxW, width));
+
+  st.img.style.width = Math.round(width) + 'px';
+  st.img.style.height = 'auto';
+  st.img.style.maxWidth = '100%';
+  st.img.removeAttribute('width');
+  st.img.removeAttribute('height');
+  st.changed = true;
+
+  positionImageResizeOverlay(st.img);
+  const tb = document.getElementById('imageAltToolbar');
+  if (tb && tb.classList.contains('open')) positionImageAltToolbar(st.img, tb);
+}
+
+function stopImageResize(e) {
+  const st = _imageResizeState;
+  document.removeEventListener('pointermove', resizeSelectedImageFromPointer, true);
+  document.removeEventListener('pointerup', stopImageResize, true);
+  document.removeEventListener('pointercancel', stopImageResize, true);
+  _imageResizeState = null;
+
+  const overlay = ensureImageResizeOverlay();
+  overlay.classList.remove('resizing');
+  if (typeof overlay.releasePointerCapture === 'function' && st && st.pointerId != null) {
+    try { overlay.releasePointerCapture(st.pointerId); } catch(_) {}
+  }
+
+  const frame = document.getElementById('previewFrame');
+  const doc = frame && frame.contentDocument;
+  if (doc && doc.body) doc.body.style.userSelect = '';
+  document.body.style.userSelect = '';
+
+  if (st && st.img) {
+    positionImageResizeOverlay(st.img);
+    const tb = document.getElementById('imageAltToolbar');
+    if (tb && tb.classList.contains('open')) positionImageAltToolbar(st.img, tb);
+    if (st.changed) {
+      syncCode(true);
+      updateStats(iframeDoc);
+      pushHistorySnapshot(false);
+      setStatus('Image resized ✓', true);
+    }
+  }
+}
+
 function attachImageAltToolbarListeners(doc) {
   if (!doc || !doc.body || doc._imageAltToolbarReady) return;
   doc._imageAltToolbarReady = true;
@@ -5425,24 +5668,46 @@ function attachImageAltToolbarListeners(doc) {
       e.stopPropagation();
       showImageAltToolbar(img);
     } else {
-      // Do not close when user is interacting with parent toolbar; iframe clicks only reach here.
       hideImageAltToolbar();
+    }
+  }, true);
+
+  doc.addEventListener('dragstart', function(e) {
+    if (e.target && e.target.closest && e.target.closest('img')) e.preventDefault();
+  }, true);
+
+  doc.addEventListener('scroll', function() {
+    if (_selectedAltImage) {
+      positionImageResizeOverlay(_selectedAltImage);
+      const tb = document.getElementById('imageAltToolbar');
+      if (tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
     }
   }, true);
 }
 
 window.addEventListener('resize', function() {
   const tb = document.getElementById('imageAltToolbar');
-  if (_selectedAltImage && tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+  if (_selectedAltImage) {
+    positionImageResizeOverlay(_selectedAltImage);
+    if (tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+  }
 });
 window.addEventListener('scroll', function() {
   const tb = document.getElementById('imageAltToolbar');
-  if (_selectedAltImage && tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+  if (_selectedAltImage) {
+    positionImageResizeOverlay(_selectedAltImage);
+    if (tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+  }
 }, true);
 
 // Keep toolbar clicks from affecting the iframe selection.
+// Important: do NOT stop propagation for the resize overlay here.
+// The resize handles live in the parent window, and stopping propagation during
+// document capture prevents their own mousedown handler from firing.
 document.addEventListener('mousedown', function(e) {
-  if (e.target && e.target.closest && e.target.closest('#imageAltToolbar')) e.stopPropagation();
+  if (e.target && e.target.closest && e.target.closest('#imageAltToolbar')) {
+    e.stopPropagation();
+  }
 }, true);
 
 setStatus('Ready — paste HTML and press Ctrl+Enter to render', false);
@@ -5679,6 +5944,446 @@ try {
     highlightCheckerResult(result, 'MAS Accessibility');
   };
 })();
+
+
+/* ═══════════════════════════════════════════
+   MS WORD-LIKE IMAGE RESIZE — STABLE OVERRIDE
+   - Selection frame is rendered inside the iframe, over the image.
+   - Click image selects only.
+   - Drag blue edge/corner handles to resize.
+   - Rotation handle is visual only, matching Word-like affordance.
+   - Clean HTML removes editor-only overlay before sync/view/copy.
+═══════════════════════════════════════════ */
+
+function ensureWordImageStyles(doc) {
+  if (!doc || doc.getElementById('kbWordImageResizeStyle')) return;
+  const style = doc.createElement('style');
+  style.id = 'kbWordImageResizeStyle';
+  style.textContent = `
+    #kbWordImageResizeOverlay {
+      position: absolute;
+      display: none;
+      border: 1.5px solid #5b9cf6;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 2147483000;
+      background: transparent;
+    }
+    #kbWordImageResizeOverlay.open { display: block; }
+    #kbWordImageResizeOverlay .kb-img-handle {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      background: #ffffff;
+      border: 1.5px solid #5b9cf6;
+      border-radius: 50%;
+      box-sizing: border-box;
+      pointer-events: auto;
+      z-index: 2;
+    }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="nw"] { left: -5px; top: -5px; cursor: nwse-resize; }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="n"]  { left: 50%; top: -5px; transform: translateX(-50%); cursor: ns-resize; }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="ne"] { right: -5px; top: -5px; cursor: nesw-resize; }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="e"]  { right: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="se"] { right: -5px; bottom: -5px; cursor: nwse-resize; }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="s"]  { left: 50%; bottom: -5px; transform: translateX(-50%); cursor: ns-resize; }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="sw"] { left: -5px; bottom: -5px; cursor: nesw-resize; }
+    #kbWordImageResizeOverlay .kb-img-handle[data-dir="w"]  { left: -5px; top: 50%; transform: translateY(-50%); cursor: ew-resize; }
+
+    #kbWordImageResizeOverlay .kb-img-rotate-line {
+      position: absolute;
+      left: 50%;
+      top: -30px;
+      width: 1px;
+      height: 25px;
+      background: #5b9cf6;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    #kbWordImageResizeOverlay .kb-img-rotate {
+      position: absolute;
+      left: 50%;
+      top: -48px;
+      width: 21px;
+      height: 21px;
+      transform: translateX(-50%);
+      background: #ffffff;
+      border: 1.5px solid #5b9cf6;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #5b9cf6;
+      font-size: 14px;
+      line-height: 1;
+      pointer-events: none;
+      box-sizing: border-box;
+      font-family: "Segoe UI", sans-serif;
+    }
+    #kbWordImageResizeOverlay .kb-img-size-badge {
+      position: absolute;
+      right: -1px;
+      bottom: -28px;
+      background: rgba(17, 24, 39, .90);
+      color: #fff;
+      font: 11px/1.2 "Segoe UI", sans-serif;
+      border-radius: 4px;
+      padding: 4px 7px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity .12s ease;
+      pointer-events: none;
+    }
+    #kbWordImageResizeOverlay.resizing .kb-img-size-badge { opacity: 1; }
+    img[data-kb-word-selected="true"] { cursor: default; }
+  `;
+  (doc.head || doc.documentElement).appendChild(style);
+}
+
+function ensureImageResizeOverlay() {
+  const frame = document.getElementById('previewFrame');
+  const doc = frame && frame.contentDocument;
+  if (!doc || !doc.body) return null;
+
+  ensureWordImageStyles(doc);
+
+  let overlay = doc.getElementById('kbWordImageResizeOverlay');
+  if (overlay) return overlay;
+
+  overlay = doc.createElement('div');
+  overlay.id = 'kbWordImageResizeOverlay';
+  overlay.setAttribute('contenteditable', 'false');
+  overlay.setAttribute('aria-hidden', 'true');
+  overlay.innerHTML = `
+    <div class="kb-img-rotate-line"></div>
+    <div class="kb-img-rotate">⟳</div>
+    <span class="kb-img-handle" data-dir="nw"></span>
+    <span class="kb-img-handle" data-dir="n"></span>
+    <span class="kb-img-handle" data-dir="ne"></span>
+    <span class="kb-img-handle" data-dir="e"></span>
+    <span class="kb-img-handle" data-dir="se"></span>
+    <span class="kb-img-handle" data-dir="s"></span>
+    <span class="kb-img-handle" data-dir="sw"></span>
+    <span class="kb-img-handle" data-dir="w"></span>
+    <div class="kb-img-size-badge" id="kbWordImageSizeBadge"></div>
+  `;
+  doc.body.appendChild(overlay);
+
+  overlay.addEventListener('pointerdown', function(e) {
+    const handle = e.target && e.target.closest ? e.target.closest('.kb-img-handle') : null;
+    if (!handle || !_selectedAltImage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    startImageResize(e, handle.getAttribute('data-dir'), handle);
+  }, true);
+
+  return overlay;
+}
+
+function updateImageSizeBadge(widthPx) {
+  const frame = document.getElementById('previewFrame');
+  const doc = frame && frame.contentDocument;
+  const badge = doc && doc.getElementById('kbWordImageSizeBadge');
+  if (badge) badge.textContent = Math.round(widthPx) + ' px';
+}
+
+function positionImageResizeOverlay(img) {
+  const overlay = ensureImageResizeOverlay();
+  if (!overlay || !img || !img.isConnected) return;
+  const doc = img.ownerDocument;
+  const rect = img.getBoundingClientRect();
+  if (!rect || rect.width <= 0 || rect.height <= 0) return;
+
+  const left = rect.left + (doc.defaultView ? doc.defaultView.scrollX : 0);
+  const top = rect.top + (doc.defaultView ? doc.defaultView.scrollY : 0);
+
+  overlay.style.left = left + 'px';
+  overlay.style.top = top + 'px';
+  overlay.style.width = rect.width + 'px';
+  overlay.style.height = rect.height + 'px';
+  overlay.classList.add('open');
+  updateImageSizeBadge(rect.width);
+}
+
+function clearSelectedImageHighlight() {
+  try {
+    if (_selectedAltImage) _selectedAltImage.removeAttribute('data-kb-word-selected');
+  } catch(_) {}
+
+  const frame = document.getElementById('previewFrame');
+  const doc = frame && frame.contentDocument;
+  const overlay = doc && doc.getElementById('kbWordImageResizeOverlay');
+  if (overlay) {
+    overlay.classList.remove('open', 'resizing');
+    overlay.style.left = '-9999px';
+    overlay.style.top = '-9999px';
+  }
+}
+
+function showImageAltToolbar(img) {
+  if (!img) return;
+
+  if (_selectedAltImage && _selectedAltImage !== img) {
+    try { _selectedAltImage.removeAttribute('data-kb-word-selected'); } catch(_) {}
+  }
+
+  _selectedAltImage = img;
+  img.setAttribute('data-kb-word-selected', 'true');
+
+  const tb = ensureImageAltToolbar();
+  const input = tb.querySelector('#imageAltInput');
+  if (input) input.value = img.getAttribute('alt') || '';
+
+  positionImageResizeOverlay(img);
+  positionImageAltToolbar(img, tb);
+  tb.classList.add('open');
+  setStatus('Image selected — drag a circle handle to resize', false);
+}
+
+function hideImageAltToolbar() {
+  const tb = document.getElementById('imageAltToolbar');
+  if (tb) tb.classList.remove('open');
+  clearSelectedImageHighlight();
+  _selectedAltImage = null;
+}
+
+function getImageResizeMaxWidth(img) {
+  if (!img) return 1600;
+  const parent = img.parentElement;
+  const parentWidth = parent ? parent.getBoundingClientRect().width : 1200;
+  return Math.max(80, Math.min(2000, parentWidth));
+}
+
+function startImageResize(e, dir, handle) {
+  if (!_selectedAltImage) return;
+  const img = _selectedAltImage;
+  const rect = img.getBoundingClientRect();
+  const aspect = rect.width && rect.height ? rect.width / rect.height : 1;
+
+  _imageResizeState = {
+    img,
+    dir: dir || 'se',
+    startX: e.clientX,
+    startY: e.clientY,
+    startW: rect.width,
+    startH: rect.height,
+    aspect,
+    maxW: getImageResizeMaxWidth(img),
+    minW: 32,
+    active: false,
+    changed: false,
+    pointerId: e.pointerId,
+    handle: handle || e.target
+  };
+
+  const doc = img.ownerDocument;
+  const overlay = ensureImageResizeOverlay();
+  if (overlay) overlay.classList.add('resizing');
+
+  if (handle && typeof handle.setPointerCapture === 'function' && e.pointerId != null) {
+    try { handle.setPointerCapture(e.pointerId); } catch(_) {}
+  }
+
+  if (doc && doc.body) doc.body.style.userSelect = 'none';
+  document.body.style.userSelect = 'none';
+
+  doc.addEventListener('pointermove', resizeSelectedImageFromPointer, true);
+  doc.addEventListener('pointerup', stopImageResize, true);
+  doc.addEventListener('pointercancel', stopImageResize, true);
+}
+
+function resizeSelectedImageFromPointer(e) {
+  const st = _imageResizeState;
+  if (!st || !st.img) return;
+  if (st.pointerId != null && e.pointerId != null && e.pointerId !== st.pointerId) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  const dx = e.clientX - st.startX;
+  const dy = e.clientY - st.startY;
+
+  if (!st.active && Math.hypot(dx, dy) < 3) return;
+  st.active = true;
+
+  const dir = st.dir || 'se';
+  let width = st.startW;
+
+  // Keep aspect ratio for all handles so it feels predictable and avoids distortion.
+  if (dir.includes('e')) width = st.startW + dx;
+  else if (dir.includes('w')) width = st.startW - dx;
+  else if (dir.includes('s')) width = (st.startH + dy) * st.aspect;
+  else if (dir.includes('n')) width = (st.startH - dy) * st.aspect;
+
+  if (dir.length === 2) {
+    const widthFromX = dir.includes('e') ? st.startW + dx : st.startW - dx;
+    const widthFromY = (dir.includes('s') ? st.startH + dy : st.startH - dy) * st.aspect;
+    width = Math.abs(widthFromX - st.startW) >= Math.abs(widthFromY - st.startW) ? widthFromX : widthFromY;
+  }
+
+  width = Math.max(st.minW, Math.min(st.maxW, width));
+
+  st.img.style.width = Math.round(width) + 'px';
+  st.img.style.height = 'auto';
+  st.img.style.maxWidth = '100%';
+  st.img.removeAttribute('width');
+  st.img.removeAttribute('height');
+  st.changed = true;
+
+  positionImageResizeOverlay(st.img);
+  const tb = document.getElementById('imageAltToolbar');
+  if (tb && tb.classList.contains('open')) positionImageAltToolbar(st.img, tb);
+}
+
+function stopImageResize(e) {
+  const st = _imageResizeState;
+  const doc = st && st.img ? st.img.ownerDocument : (iframeDoc || null);
+
+  if (doc) {
+    doc.removeEventListener('pointermove', resizeSelectedImageFromPointer, true);
+    doc.removeEventListener('pointerup', stopImageResize, true);
+    doc.removeEventListener('pointercancel', stopImageResize, true);
+  }
+
+  if (st && st.handle && typeof st.handle.releasePointerCapture === 'function' && st.pointerId != null) {
+    try { st.handle.releasePointerCapture(st.pointerId); } catch(_) {}
+  }
+
+  _imageResizeState = null;
+
+  const overlay = ensureImageResizeOverlay();
+  if (overlay) overlay.classList.remove('resizing');
+
+  if (doc && doc.body) doc.body.style.userSelect = '';
+  document.body.style.userSelect = '';
+
+  if (st && st.img) {
+    positionImageResizeOverlay(st.img);
+    const tb = document.getElementById('imageAltToolbar');
+    if (tb && tb.classList.contains('open')) positionImageAltToolbar(st.img, tb);
+    if (st.changed) {
+      syncCode(true);
+      updateStats(iframeDoc);
+      pushHistorySnapshot(false);
+      setStatus('Image resized ✓', true);
+    }
+  }
+}
+
+function attachImageAltToolbarListeners(doc) {
+  if (!doc || !doc.body || doc._imageAltToolbarReady) return;
+  doc._imageAltToolbarReady = true;
+  ensureWordImageStyles(doc);
+
+  doc.addEventListener('click', function(e) {
+    const img = e.target && e.target.closest ? e.target.closest('img') : null;
+    const inOverlay = e.target && e.target.closest ? e.target.closest('#kbWordImageResizeOverlay') : null;
+    if (inOverlay) return;
+
+    if (img) {
+      e.preventDefault();
+      e.stopPropagation();
+      showImageAltToolbar(img);
+    } else {
+      hideImageAltToolbar();
+    }
+  }, true);
+
+  doc.addEventListener('dragstart', function(e) {
+    if (e.target && e.target.closest && e.target.closest('img')) e.preventDefault();
+  }, true);
+
+  doc.addEventListener('scroll', function() {
+    if (_selectedAltImage) {
+      positionImageResizeOverlay(_selectedAltImage);
+      const tb = document.getElementById('imageAltToolbar');
+      if (tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+    }
+  }, true);
+}
+
+function getCleanIframeBodyHTML() {
+  if (!iframeDoc || !iframeDoc.body) return '';
+  const clone = iframeDoc.body.cloneNode(true);
+  clone.querySelectorAll('#kbWordImageResizeOverlay, #imageWordResizeOverlay, .image-word-resize-overlay').forEach(function(el) {
+    el.remove();
+  });
+  clone.querySelectorAll('img[data-kb-word-selected]').forEach(function(img) {
+    img.removeAttribute('data-kb-word-selected');
+  });
+  return clone.innerHTML;
+}
+
+function getCleanDocumentOuterHTML(doc) {
+  if (!doc || !doc.documentElement) return '';
+  const clone = doc.documentElement.cloneNode(true);
+  clone.querySelectorAll('#kbWordImageResizeOverlay, #imageWordResizeOverlay, .image-word-resize-overlay').forEach(function(el) {
+    el.remove();
+  });
+  clone.querySelectorAll('img[data-kb-word-selected]').forEach(function(img) {
+    img.removeAttribute('data-kb-word-selected');
+  });
+  return clone.outerHTML;
+}
+
+// Override sync so editor-only resize frame never appears in generated code.
+syncCode = function(immediate) {
+  clearTimeout(_syncTimer);
+  const delay = immediate ? 0 : 600;
+  _syncTimer = setTimeout(function() {
+    if (!iframeDoc || !iframeDoc.body) return;
+    var headHTML = iframeDoc.head ? iframeDoc.head.innerHTML : '';
+    var bodyHTML = getCleanIframeBodyHTML();
+    const html = '<!DOCTYPE html>\n<html>\n<head>' + headHTML +
+      '</head>\n<body>' + bodyHTML + '\n</body>\n</html>';
+    if (html === _lastSyncedHTML) return;
+    _lastSyncedHTML = html;
+    document.getElementById('codeInput').value = html;
+    document.getElementById('charCount').textContent = html.length.toLocaleString() + ' chars';
+  }, delay);
+};
+
+// Override View HTML to use the same clean output.
+viewHTML = function() {
+  let code = '';
+  const frame = document.getElementById('previewFrame');
+
+  try {
+    const doc = frame && frame.contentDocument;
+    if (doc && doc.documentElement && frame.style.display !== 'none') {
+      code = '<!DOCTYPE html>\n' + getCleanDocumentOuterHTML(doc);
+    }
+  } catch (e) {
+    code = '';
+  }
+
+  if (!code.trim()) {
+    code = document.getElementById('codeInput').value || '';
+  }
+
+  if (!code.trim()) {
+    setStatus('Nothing to view — render HTML first', false);
+    return;
+  }
+
+  const blob = new Blob([code], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!win) {
+    setStatus('Pop-up blocked. Allow pop-ups to view HTML.', false);
+    URL.revokeObjectURL(url);
+    return;
+  }
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+  setStatus('Opened clean HTML preview in a new tab ✓', true);
+};
+
+window.addEventListener('resize', function() {
+  const tb = document.getElementById('imageAltToolbar');
+  if (_selectedAltImage) {
+    positionImageResizeOverlay(_selectedAltImage);
+    if (tb && tb.classList.contains('open')) positionImageAltToolbar(_selectedAltImage, tb);
+  }
+});
 
 </script>
 </body>
